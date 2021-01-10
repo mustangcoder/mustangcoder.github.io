@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>zk原生API一览 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="maven依赖">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zk原生API一览">
+<meta property="og:url" content="http://example.com/2018/08/09/zk%E5%8E%9F%E7%94%9FAPI%E4%B8%80%E8%A7%88/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="maven依赖">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2018-08-09T13:06:04.000Z">
+<meta property="article:modified_time" content="2018-12-26T14:50:42.000Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="zookeeper">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-zk原生API一览" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/08/09/zk%E5%8E%9F%E7%94%9FAPI%E4%B8%80%E8%A7%88/" class="article-date">
+  <time class="dt-published" datetime="2018-08-09T13:06:04.000Z" itemprop="datePublished">2018-08-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/zookeeper/">zookeeper</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      zk原生API一览
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="maven依赖"><a href="#maven依赖" class="headerlink" title="maven依赖"></a>maven依赖</h1><a id="more"></a>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span><br><span class="line">&lt;project xmlns=<span class="string">&quot;http://maven.apache.org/POM/4.0.0&quot;</span> xmlns:xsi=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span><br><span class="line">         xsi:schemaLocation=<span class="string">&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;</span>&gt;</span><br><span class="line">    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;</span><br><span class="line"></span><br><span class="line">    &lt;groupId&gt;top.ornobug&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;zkdemo&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;</span><br><span class="line">    &lt;packaging&gt;jar&lt;/packaging&gt;</span><br><span class="line"></span><br><span class="line">    &lt;name&gt;zkdemo&lt;/name&gt;</span><br><span class="line">    &lt;description&gt;Demo project for Spring Boot&lt;/description&gt;</span><br><span class="line"></span><br><span class="line">    &lt;parent&gt;</span><br><span class="line">        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;</span><br><span class="line">        &lt;version&gt;1.5.15.RELEASE&lt;/version&gt;</span><br><span class="line">        &lt;relativePath/&gt; &lt;!-- lookup parent from repository --&gt;</span><br><span class="line">    &lt;/parent&gt;</span><br><span class="line"></span><br><span class="line">    &lt;properties&gt;</span><br><span class="line">        &lt;source.encoding&gt;UTF-8&lt;/source.encoding&gt;</span><br><span class="line">        &lt;java.version&gt;1.8&lt;/java.version&gt;</span><br><span class="line">        &lt;!-- Maven plugin --&gt;</span><br><span class="line">        &lt;maven-source-plugin.version&gt;2.0.3&lt;/maven-source-plugin.version&gt;</span><br><span class="line">        &lt;maven-compiler-plugin.version&gt;2.0.2&lt;/maven-compiler-plugin.version&gt;</span><br><span class="line">        &lt;maven-jar-plugin.version&gt;2.3.2&lt;/maven-jar-plugin.version&gt;</span><br><span class="line"></span><br><span class="line">        &lt;zookeeper.version&gt;3.4.13&lt;/zookeeper.version&gt;</span><br><span class="line">        &lt;zkclient.version&gt;0.2-SNAPSHOT&lt;/zkclient.version&gt;</span><br><span class="line">        &lt;curator.version&gt;4.0.1&lt;/curator.version&gt;</span><br><span class="line">    &lt;/properties&gt;</span><br><span class="line"></span><br><span class="line">    &lt;build&gt;</span><br><span class="line">        &lt;plugins&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-source-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;$&#123;maven-source-plugin.version&#125;&lt;/version&gt;</span><br><span class="line">                &lt;executions&gt;</span><br><span class="line">                    &lt;execution&gt;</span><br><span class="line">                        &lt;id&gt;attach-sources&lt;/id&gt;</span><br><span class="line">                        &lt;goals&gt;</span><br><span class="line">                            &lt;goal&gt;jar&lt;/goal&gt;</span><br><span class="line">                        &lt;/goals&gt;</span><br><span class="line">                    &lt;/execution&gt;</span><br><span class="line">                &lt;/executions&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;$&#123;maven-compiler-plugin.version&#125;&lt;/version&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;encoding&gt;$&#123;source.encoding&#125;&lt;/encoding&gt;</span><br><span class="line">                    &lt;source&gt;$&#123;java.version&#125;&lt;/source&gt;</span><br><span class="line">                    &lt;target&gt;$&#123;java.version&#125;&lt;/target&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line"></span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-shade-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;1.5&lt;/version&gt;</span><br><span class="line">                &lt;executions&gt;</span><br><span class="line">                    &lt;execution&gt;</span><br><span class="line">                        &lt;phase&gt;package&lt;/phase&gt;</span><br><span class="line">                        &lt;goals&gt;</span><br><span class="line">                            &lt;goal&gt;shade&lt;/goal&gt;</span><br><span class="line">                        &lt;/goals&gt;</span><br><span class="line">                        &lt;configuration&gt;</span><br><span class="line">                            &lt;transformers&gt;</span><br><span class="line">                                &lt;transformer</span><br><span class="line">                                        implementation=<span class="string">&quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&quot;</span>&gt;</span><br><span class="line">                                    &lt;mainClass&gt;Test&lt;/mainClass&gt;</span><br><span class="line">                                &lt;/transformer&gt;</span><br><span class="line">                            &lt;/transformers&gt;</span><br><span class="line">                        &lt;/configuration&gt;</span><br><span class="line">                    &lt;/execution&gt;</span><br><span class="line">                &lt;/executions&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line"></span><br><span class="line">        &lt;/plugins&gt;</span><br><span class="line">    &lt;/build&gt;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &lt;dependencyManagement&gt;</span><br><span class="line">        &lt;dependencies&gt;</span><br><span class="line">            &lt;dependency&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.zookeeper&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;zookeeper&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;$&#123;zookeeper.version&#125;&lt;/version&gt;</span><br><span class="line">            &lt;/dependency&gt;</span><br><span class="line">        &lt;/dependencies&gt;</span><br><span class="line">    &lt;/dependencyManagement&gt;</span><br><span class="line"></span><br><span class="line">    &lt;dependencies&gt;</span><br><span class="line"></span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter&lt;/artifactId&gt;</span><br><span class="line">        &lt;/dependency&gt;</span><br><span class="line"></span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;</span><br><span class="line">            &lt;scope&gt;test&lt;/scope&gt;</span><br><span class="line">        &lt;/dependency&gt;</span><br><span class="line"></span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.apache.zookeeper&lt;/groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;zookeeper&lt;/artifactId&gt;</span><br><span class="line">        &lt;/dependency&gt;</span><br><span class="line">    &lt;/dependencies&gt;</span><br><span class="line">&lt;/project&gt;</span><br></pre></td></tr></table></figure>
+<h1 id="创建会话"><a href="#创建会话" class="headerlink" title="创建会话"></a>创建会话</h1><p>zk客户端通过创建Zookeeper实例来连接Zookeeper服务器，org.apache.zookeeper.Zookeeper包含四个构造函数</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ZooKeeper</span><span class="params">(String connectString, <span class="keyword">int</span> sessionTimeout, Watcher watcher)</span> <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ZooKeeper</span><span class="params">(String connectString, <span class="keyword">int</span> sessionTimeout, Watcher watcher, <span class="keyword">boolean</span> canBeReadOnly)</span> <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ZooKeeper</span><span class="params">(String connectString, <span class="keyword">int</span> sessionTimeout, Watcher watcher, <span class="keyword">long</span> sessionId, <span class="keyword">byte</span>[] sessionPasswd)</span> <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ZooKeeper</span><span class="params">(String connectString, <span class="keyword">int</span> sessionTimeout, Watcher watcher, <span class="keyword">long</span> sessionId, <span class="keyword">byte</span>[] sessionPasswd, <span class="keyword">boolean</span> canBeReadOnly)</span> <span class="keyword">throws</span> IOException</span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>connectString:这是zk的服务器列表，形式为<code>ip:port,ip:port,...ip:port</code>,也可以通过<code>ip:port,ip:port,...ip:port/example_node</code>这样来表示客户端连上服务器后的跟布鲁，以后的各种操作都会基于该根目录，例如客户端操作<code>/son1/son1-1</code>则会指向<code>/example_node/son1/son1-1</code>,这个目录叫做Chroot</li>
+<li>sessionTimeout:会话超时时间，单位为毫秒的整型值，zk客户端和服务端会通过心跳机制来维持会话的有效性，如果在sessionTimeout时间内没有收到心跳检测，则会话失效</li>
+<li>watcher:客户端需要传入Watcher接口的实现类作为默认的Watcher事件通知处理器，也可以设置为null</li>
+<li>canBeReadOnly:表示当前会话是否支持只读模式，有时候集群中一个机器和其他过半数机器失去联系，如果设置了只读模式，则当前机器可以提供读服务，不能写，如果没有设置只读模式，则不能提供读/写服务</li>
+<li>sessionId/sessionPasswd:会话id/密钥，这两个参数可以唯一确定一个会话，客户端可以通过这两个参数实现会话复用/会话恢复。当第一次连接到服务器可以获得这两个参数，在下次连接时传入Zookeeper的构造函数即可</li>
+</ul>
+<p><strong>注意:</strong> 会话建立的过程是异步的，构造方法在处理完客户端的初始化工作后立即返回，此时很可能并没建立一个可用的会话，会话的状态只是处于<code>CONNECTING</code>状态。当会话真正建立完毕，zk服务端会像对应的客户端发送一个事件通知，此时构造函数中Watcher的作用就会体现，刻划断获取这个通知之后会话真正建立。</p>
+<h1 id="创建节点"><a href="#创建节点" class="headerlink" title="创建节点"></a>创建节点</h1><p>创建节点有如下几个重载方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">同步创建</span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">create</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">byte</span> data[], List&lt;ACL&gt; acl, CreateMode createMode)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function">异步创建</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">create</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">byte</span> data[], List&lt;ACL&gt; acl, CreateMode createMode,  StringCallback cb, Object ctx)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>path:要创建的数据节点路径</li>
+<li>data[]:字节数组，节点创建后的初始内容</li>
+<li>acl:ACL策略，权限控制</li>
+<li>createMode:节点类型，有四种，如下:<ul>
+<li>持久PERSISTENT:会话断开也不会销毁</li>
+<li>持久顺序PERSISTENT_SEQUENTIAL:会话断开也不会销毁且其后会跟随整型zk全局id</li>
+<li>临时EPHEMERAL:会话断开则节点销毁</li>
+<li>临时顺序EPHEMERAL_SEQUENTIAL:会话断开则节点销毁,其后会跟随整型zk全局id</li>
+</ul>
+</li>
+<li>cb:异步回调函数，实现StringCallback接口，重写processResult方法，服务端节点创建完毕后会自动调用该方法，其中processResult方法参数如下<ul>
+<li>rc:ResultCode，服务端响应码，通过rc可以知道api调用的结果，常见响应码：<ul>
+<li>0:OK,接口调用成功</li>
+<li>-4:ConnectionLoss,客户端和服务段断开连接</li>
+<li>-110:NodeExists指定节点已存在</li>
+<li>-112:SessionExpired,会话过期</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ctx:用于参数传递，可在回调方法执行时使用</li>
+</ul>
+<p><strong>注意:</strong> zookeeper不支持递归创建节点，且同名节点如果存在会抛<code>NodeExistsException</code>异常，zookeeper不提供序列化，要开发人员自行序列化/反序列化</p>
+<h1 id="删除节点"><a href="#删除节点" class="headerlink" title="删除节点"></a>删除节点</h1><p>删除节点的重载方法如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">异步删除</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delete</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">int</span> version, VoidCallback cb, Object ctx)</span></span></span><br><span class="line"><span class="function">同步删除</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delete</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">int</span> version)</span> <span class="keyword">throws</span> InterruptedException, KeeperException</span></span><br></pre></td></tr></table></figure>
+<p>参数说明:</p>
+<ul>
+<li>path:要删除的节点路径</li>
+<li>version:指定节点的数据版本，即表明本次删除操作是针对该数据版本进行</li>
+<li>cb:异步删除之后的回调函数，实现该接口，重写<code>public void processResult(int rc, String path, Object ctx)</code>方法，几个参数含义与上边异步创建节点的回调函数参数类似</li>
+<li>ctx:用于参数传递，可在回调方法执行时使用</li>
+</ul>
+<h1 id="查询子节点列表"><a href="#查询子节点列表" class="headerlink" title="查询子节点列表"></a>查询子节点列表</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">同步方式</span><br><span class="line"><span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getChildren</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getChildren</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher, Stat stat)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getChildren</span><span class="params">(String path, <span class="keyword">boolean</span> watch)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getChildren</span><span class="params">(String path, <span class="keyword">boolean</span> watch, Stat stat)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function">异步方式</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getChildren</span><span class="params">(String path, <span class="keyword">boolean</span> watch, ChildrenCallback cb, Object ctx)</span></span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getChildren</span><span class="params">(String path, <span class="keyword">boolean</span> watch, Children2Callback cb, Object ctx)</span></span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getChildren</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher, ChildrenCallback cb, Object ctx)</span></span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getChildren</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher, Children2Callback cb, Object ctx)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>path:指定数据节点的节点路径，即API调用的目的是获取该节点的子节点列表</li>
+<li>watcher:监听的watcher,在本次子节点获取之后，子节点列表发生变更的话那么就会向客户端发送通知，该参数可以传null。如果客户端在获得指定节点的子节点列表后，还需要订阅这个子节点列表的变化通知，那么就可以通过注册watcher来实现。当有子节点被添加或者删除时，服务端会向客户端发送NodeChildrenChanged类型的事件通知。在通知中，不包含最新的节点列表，客户端要自己获取</li>
+<li>watch:表明是否需要注册watcher，如果为true，那么zookeeper就会使用创建zookeeper会话时传入的watcher,如果为false,则不需要注册watcher</li>
+<li>cb:异步回调函数，ChildrenCallback与Children2Callback的区别是Children2Callback会在processResult方法中待会新的stat对象，而ChildrenCallback不会</li>
+<li>ctx:上下文传递的参数</li>
+<li>stat:指定数据节点的状态信息，在方法中传入旧的状态stat,该stat会被来自来自服务端响应的新stat对象替换，当我们需要最新的子节点状态信息时可以传入该参数</li>
+</ul>
+<p><strong>注意:</strong> 该方法只能获得当前节点的子节点，不能递归再往下会的更多层次</p>
+<h1 id="查询节点数据"><a href="#查询节点数据" class="headerlink" title="查询节点数据"></a>查询节点数据</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">同步方式</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">byte</span>[] getData(<span class="keyword">final</span> String path, Watcher watcher, Stat stat) <span class="keyword">throws</span> KeeperException, InterruptedException</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">byte</span>[] getData(String path, <span class="keyword">boolean</span> watch, Stat stat) <span class="keyword">throws</span> KeeperException, InterruptedException</span><br><span class="line">异步方式</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getData</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher, DataCallback cb, Object ctx)</span></span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getData</span><span class="params">(String path, <span class="keyword">boolean</span> watch, DataCallback cb, Object ctx)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>path:要获得数据的节点路径</li>
+<li>watcher:注册的watcher,注册之后节点状态发生变更，就会向客户端发送NodeDataChanged的事件通知，该参数可以传入null</li>
+<li>stat:数据节点的状态信息，跟getChildren方法的参数一致</li>
+<li>watch:同getChildren</li>
+<li>cb:同getChildren</li>
+<li>ctx:同getChildren</li>
+</ul>
+<p><strong>注意:</strong> 节点的数据内容或者节点的数据版本变化，都被看做zookeeper节点的变化</p>
+<h1 id="更新数据"><a href="#更新数据" class="headerlink" title="更新数据"></a>更新数据</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">同步方式</span><br><span class="line"><span class="function"><span class="keyword">public</span> Stat <span class="title">setData</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">byte</span> data[], <span class="keyword">int</span> version)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function">异步方式</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setData</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">byte</span> data[], <span class="keyword">int</span> version, StatCallback cb, Object ctx)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>path:数据节点路径</li>
+<li>data[]:要设置成的数据，覆盖旧数据</li>
+<li>version:指定节点的数据版本，即表明本次操作是针对该数据版本机型，</li>
+<li>cb:异步回调函数</li>
+<li>ctx:传递的参数</li>
+</ul>
+<p><strong>注意:</strong> setData函数有version参数，而getData却没有对应的参数，是应为在分布式的环境下，在更新某个节点数据时，多个线程用cas操作进行更新，version就是cas里面的预期值，针对该版本更新数据。version是从0开始，每次加一，-1表示一个标识符，表示对数据最新版本进行更新操作，如果zk节点的数据更新操作没有原子性要求，则可以使用-1</p>
+<h1 id="检测节点存在"><a href="#检测节点存在" class="headerlink" title="检测节点存在"></a>检测节点存在</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">同步方式</span><br><span class="line"><span class="function"><span class="keyword">public</span> Stat <span class="title">exists</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Stat <span class="title">exists</span><span class="params">(String path, <span class="keyword">boolean</span> watch)</span> <span class="keyword">throws</span> KeeperException, InterruptedException</span></span><br><span class="line"><span class="function">异步方式</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exists</span><span class="params">(<span class="keyword">final</span> String path, Watcher watcher, StatCallback cb, Object ctx)</span></span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exists</span><span class="params">(String path, <span class="keyword">boolean</span> watch, StatCallback cb, Object ctx)</span></span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>path:数据节点路径</li>
+<li>watcher:用于监听节点创建/删除/更新的事件</li>
+<li>watch:是否复用默认的watcher</li>
+<li>cb:异步回调函数</li>
+<li>ctx:传递参数</li>
+</ul>
+<p><strong>注意:</strong> 对于指定节点的子节点的各种变换，不会发出事件通知</p>
+<h1 id="权限控制"><a href="#权限控制" class="headerlink" title="权限控制"></a>权限控制</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addAuthInfo</span><span class="params">(String scheme, <span class="keyword">byte</span> auth[])</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<ul>
+<li>scheme:权限控制模式，world/auth/digest/ip/super</li>
+<li>auth:集体权限信息</li>
+</ul>
+<h1 id="ZooDefs-Ids说明"><a href="#ZooDefs-Ids说明" class="headerlink" title="ZooDefs.Ids说明"></a>ZooDefs.Ids说明</h1><ul>
+<li>OPEN_ACL_UNSAFE ：完全开放。 事实上这里是采用了world验证模式，由于每个zk连接都有world验证模式，所以znode在设置了 OPEN_ACL_UNSAFE 时，是对所有的连接开放。</li>
+<li>CREATOR_ALL_ACL ：给创建该znode连接所有权限。 事实上这里是采用了auth验证模式，使用sessionID做验证。所以设置了 CREATOR_ALL_ACL 时，创建该znode的连接可以对该znode做任何修改。</li>
+<li>READ_ACL_UNSAFE ：所有的客户端都可读。 事实上这里是采用了world验证模式，由于每个zk连接都有world验证模式，所以znode在设置了READ_ACL_UNSAFE时，所有的连接都可以读该znode。</li>
+</ul>
+<p><strong>注意:</strong> 当我们对一个节点添加权限信息后，依然可以自由删除这个节点，但对于这个节点的子节点，就必须使用相应的权限信息才能删除。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/08/09/zk%E5%8E%9F%E7%94%9FAPI%E4%B8%80%E8%A7%88/" data-id="ckjr4vdza002gf0ukakfnaq7r" data-title="zk原生API一览" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/08/12/zkclient%E5%B7%A5%E5%85%B7%E5%8C%85API%E4%B8%80%E8%A7%88%20/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          zkclient工具包API一览
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/08/07/zookeeper%E7%9A%84ZAB%E5%8D%8F%E8%AE%AE%E6%A6%82%E8%BF%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">zookeeper的ZAB协议概述</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/activemq/">activemq</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/hadoop/">hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/js/">js</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/jvm/">jvm</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/linux/">linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/maven/">maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/mysql/">mysql</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/spring/">spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/zookeeper/">zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">多线程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%97%A5%E5%BF%97/">日志</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%BD%AE%E5%AD%90/">轮子</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%80%9A%E8%AF%86/">通识</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CountDownLatch/" rel="tag">CountDownLatch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CyclicBarrier/" rel="tag">CyclicBarrier</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantLock/" rel="tag">ReentrantLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantReadWriteLock/" rel="tag">ReentrantReadWriteLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ThreadLocal/" rel="tag">ThreadLocal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/activemq/" rel="tag">activemq</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cas%E6%93%8D%E4%BD%9C/" rel="tag">cas操作</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cron/" rel="tag">cron</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fork-join%E6%A1%86%E6%9E%B6/" rel="tag">fork/join框架</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/freemark/" rel="tag">freemark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hadoop/" rel="tag">hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm/" rel="tag">jvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" rel="tag">jvm，垃圾回收</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/" rel="tag">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/log4j/" rel="tag">log4j</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/" rel="tag">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/protobuf/" rel="tag">protobuf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/quartz/" rel="tag">quartz</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/" rel="tag">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/servlet3/" rel="tag">servlet3</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring/" rel="tag">spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/springboot/" rel="tag">springboot</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/" rel="tag">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web-xml/" rel="tag">web.xml</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" rel="tag">主从复制</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" rel="tag">单例模式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">基础线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag">多线程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" rel="tag">字符串</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="tag">布隆过滤器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" rel="tag">并发集合类</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2/" rel="tag">搜索</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">数字格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A0%E9%94%81/" rel="tag">无锁</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">日期格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%A0%88/" rel="tag">栈</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B3%9B%E5%9E%8B/" rel="tag">泛型</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" rel="tag">线程阻塞工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BD%AE%E5%AD%90/" rel="tag">轮子</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%9A%E8%AF%86/" rel="tag">通识</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" rel="tag">锁优化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%9F%E5%88%97/" rel="tag">队列</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CountDownLatch/" style="font-size: 10px;">CountDownLatch</a> <a href="/tags/CyclicBarrier/" style="font-size: 10px;">CyclicBarrier</a> <a href="/tags/ReentrantLock/" style="font-size: 10px;">ReentrantLock</a> <a href="/tags/ReentrantReadWriteLock/" style="font-size: 10px;">ReentrantReadWriteLock</a> <a href="/tags/ThreadLocal/" style="font-size: 10px;">ThreadLocal</a> <a href="/tags/activemq/" style="font-size: 10px;">activemq</a> <a href="/tags/cas%E6%93%8D%E4%BD%9C/" style="font-size: 10px;">cas操作</a> <a href="/tags/cron/" style="font-size: 10px;">cron</a> <a href="/tags/fork-join%E6%A1%86%E6%9E%B6/" style="font-size: 10px;">fork/join框架</a> <a href="/tags/freemark/" style="font-size: 10px;">freemark</a> <a href="/tags/hadoop/" style="font-size: 12px;">hadoop</a> <a href="/tags/js/" style="font-size: 14px;">js</a> <a href="/tags/jvm/" style="font-size: 10px;">jvm</a> <a href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" style="font-size: 12px;">jvm，垃圾回收</a> <a href="/tags/linux/" style="font-size: 16px;">linux</a> <a href="/tags/log4j/" style="font-size: 10px;">log4j</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/protobuf/" style="font-size: 10px;">protobuf</a> <a href="/tags/quartz/" style="font-size: 12px;">quartz</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/servlet3/" style="font-size: 10px;">servlet3</a> <a href="/tags/spring/" style="font-size: 12px;">spring</a> <a href="/tags/springboot/" style="font-size: 10px;">springboot</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/web-xml/" style="font-size: 10px;">web.xml</a> <a href="/tags/zookeeper/" style="font-size: 20px;">zookeeper</a> <a href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" style="font-size: 10px;">主从复制</a> <a href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" style="font-size: 10px;">单例模式</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">基础线程池</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 18px;">多线程</a> <a href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" style="font-size: 10px;">字符串</a> <a href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" style="font-size: 10px;">布隆过滤器</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" style="font-size: 10px;">并发集合类</a> <a href="/tags/%E6%90%9C%E7%B4%A2/" style="font-size: 10px;">搜索</a> <a href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 12px;">数字格式化</a> <a href="/tags/%E6%97%A0%E9%94%81/" style="font-size: 10px;">无锁</a> <a href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 10px;">日期格式化</a> <a href="/tags/%E6%A0%88/" style="font-size: 10px;">栈</a> <a href="/tags/%E6%B3%9B%E5%9E%8B/" style="font-size: 10px;">泛型</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">线程池</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">线程阻塞工具</a> <a href="/tags/%E8%BD%AE%E5%AD%90/" style="font-size: 10px;">轮子</a> <a href="/tags/%E9%80%9A%E8%AF%86/" style="font-size: 10px;">通识</a> <a href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" style="font-size: 12px;">锁优化</a> <a href="/tags/%E9%98%9F%E5%88%97/" style="font-size: 10px;">队列</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/10/">October 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/09/">September 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/01/10/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">federation模式的hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/">linux-文件管理</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/">星期月份英文缩写</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

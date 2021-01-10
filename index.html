@@ -118,25 +118,870 @@
 
 
   
+    <article id="post-federation模式的hadoop集群搭建" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" class="article-date">
+  <time class="dt-published" datetime="2018-12-24T13:09:06.000Z" itemprop="datePublished">2018-12-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/hadoop/">hadoop</a>
+  </div>
 
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">federation模式的hadoop集群搭建</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h1><p>前一篇文章是简单的hadoop集群搭建，有以下几个弊端</p>
+<ul>
+<li>块存储和命名空间高度耦合：NameNode中的命名空间和块管理的结合使得这两层架构耦合在一起，难以让其他的NameNode实现方案直接使用块存储。</li>
+<li>NameNode不易扩展：DataNode能水平扩展是HDFS得以水平扩展的原因，但是NameNode在内存中存储整个分布式文件系统的元数据信息，限制集群的数据块、文件和目录的数目。</li>
+<li>性能：整个集群的文件操作的性能受制于单个NameNode的吞吐量。</li>
+<li>隔离性：不同业务的不同用户提交不同的作业，如果某个用户提交的作业负载很大，会拖慢所有其他作业，所以提供隔离性迫在眉睫。<br>单NameNode的hadoop集群架构图如下<br><img src="http://file.ornobug.top/hadoop/single_hadoop.png"><br>所以，hadoop就提供了Federation模式的集群，这种模式可以有多个NameNode。架构图如下：<br><img src="http://file.ornobug.top/hadoop/federation_hadoop.png"></li>
+</ul>
+<p>HDFS Federation意味着在集群中将会有多个namenode/namespace,这样的方式有什么好处呢?<br><strong>多namespace的方式可以直接减轻单一NameNode的压力，这些NameNode是共享集群中所有的DataNode的,它们还是在同一个集群内的。</strong><br><strong>分布式的DataNode</strong> 被用作通用的数据块存储设备，每个DataNode要向集群所有的NameNode注册，且周期性的向所有NameNode发送心跳和块报告，执行来自所有NameNode的命令。<br>一个 <strong>Block Pool</strong> 由属于同一个命名空间的数据块组成，每个DataNode可能会存储集群中所有的Block Pool中的数据块。<br>某个NameNode上的命名空间与他对应的Block Pool一起被称为 <strong>命名空间卷</strong>。他是管理的基本单位，当一个NameNode及命名空间被删除后，其所有DataNode上对应的Block Pool也会被删除，当集群升级时，每隔命名空间卷作为一个基本单元进行升级。<br>一个 <strong>ClusterID</strong> 用来标识集群中的所有节点，当一个NameNode被格式化时，需要提供此ClusterID，或者自动生成一个ClusterID，生成的ClusterID用于集群中其他NameNode的格式化。<br>从上面的架构中我们可以看到通过<code>Block Pools</code>对NameNode和块存储进行了解耦。也因为<code>Block Pools</code>这个中间层，NameNode变得更易扩展，由于NameNode可扩展了，单点的性能问题也得到解决，最后由于各个NameNode独立，使得隔离性也得到了保障。</p>
+<h1 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h1><ul>
+<li>在现有的hadoop集群增加一个NameNode</li>
+<li>不重启现有集群，不影响数据访问<h1 id="Federation模式的配置"><a href="#Federation模式的配置" class="headerlink" title="Federation模式的配置"></a>Federation模式的配置</h1><h2 id="增加一台新机器"><a href="#增加一台新机器" class="headerlink" title="增加一台新机器"></a>增加一台新机器</h2>这里首先需要做的工作配置hosts与ssh免密码，参考上一篇文章<h2 id="配置hdfs-site-xml"><a href="#配置hdfs-site-xml" class="headerlink" title="配置hdfs-site.xml"></a>配置hdfs-site.xml</h2>在master机器原有的hdfs-site.xml基础上增加如下内容<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.nameservices&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;ns1,ns2&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.rpc-address.ns1&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.http-address.ns1&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:50700&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.secondary.http-address.ns1&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.rpc-address.ns2&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master2:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.http-address.ns2&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master2:50700&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.secondary.http-address.ns2&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master2:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br></pre></td></tr></table></figure>
+将master上的文件scp到其他节点<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/hdfs-site.xml slave1:/usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/</span><br><span class="line">hdfs-site.xml                                                                                                        <span class="number">100</span>% <span class="number">2171</span>   <span class="number">148.</span>6KB/s   <span class="number">00</span>:<span class="number">00</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/hdfs-site.xml slave2:/usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/</span><br><span class="line">hdfs-site.xml                                                                                                        <span class="number">100</span>% <span class="number">2171</span>    <span class="number">56.</span>8KB/s   <span class="number">00</span>:<span class="number">00</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/hdfs-site.xml slave3:/usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/</span><br><span class="line">hdfs-site.xml                                                                                                        <span class="number">100</span>% <span class="number">2171</span>    <span class="number">43.</span>2KB/s   <span class="number">00</span>:<span class="number">00</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/hdfs-site.xml master2:/usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/etc/hadoop/</span><br><span class="line">The authenticity of host <span class="string">&#x27;master2 (35.189.45.67)&#x27;</span> can<span class="string">&#x27;t be established.</span></span><br><span class="line"><span class="string">ECDSA key fingerprint is SHA256:sCoDif4bFuCPc79lGwZbA+ovDznvPKtHes7IEJ8QwhU.</span></span><br><span class="line"><span class="string">ECDSA key fingerprint is MD5:7f:1d:36:96:69:1f:7e:c7:e4:49:a6:9b:04:d5:88:6e.</span></span><br><span class="line"><span class="string">Are you sure you want to continue connecting (yes/no)? yes</span></span><br><span class="line"><span class="string">Warning: Permanently added &#x27;</span>master2,<span class="number">35.189</span><span class="number">.45</span><span class="number">.67</span><span class="string">&#x27; (ECDSA) to the list of known hosts.</span></span><br><span class="line"><span class="string">hdfs-site.xml                                                                       </span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>注意</strong>：这里使用google云，hosts文件中master2的ip要配置为内网ip</p>
+<h2 id="启动master2"><a href="#启动master2" class="headerlink" title="启动master2"></a>启动master2</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">5</span> logs]$ hadoop-daemon.sh start namenode</span><br><span class="line">starting namenode, logging to /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/logs/hadoop-bigdata-namenode-hdp-<span class="number">5.</span>out</span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">5</span> logs]$ hadoop-daemon.sh start secondarynamenode</span><br><span class="line">starting secondarynamenode, logging to /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/logs/hadoop-bigdata-secondarynamenode-hdp-<span class="number">5.</span>out</span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">5</span> logs]$ jps</span><br><span class="line"><span class="number">9152</span> Jps</span><br><span class="line"><span class="number">8892</span> NameNode</span><br><span class="line"><span class="number">9069</span> SecondaryNameNode</span><br></pre></td></tr></table></figure>
+<h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><p><img src="http://file.ornobug.top/hadoop/federation_hadoop_web.png"><br>综上我们在没有重启集群的情况下，加入了第二个NameNode，如果我们想降入更多的NameNode那么就修改hdfs-site.xml配置文件和hosts文件就好了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" data-id="ckjr4vdyr000if0ukfz8ldy6b" data-title="federation模式的hadoop集群搭建" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hadoop/" rel="tag">hadoop</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-hadoop集群搭建" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" class="article-date">
+  <time class="dt-published" datetime="2018-12-16T06:09:06.000Z" itemprop="datePublished">2018-12-16</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/hadoop/">hadoop</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">hadoop集群搭建</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h1><h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建一个root组的bigdata用户</span></span><br><span class="line">useradd -g root bigdata</span><br></pre></td></tr></table></figure>
+<h2 id="hosts文件配置"><a href="#hosts文件配置" class="headerlink" title="hosts文件配置"></a>hosts文件配置</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// mater公网ip为35.234.37.35</span></span><br><span class="line"><span class="number">10.140</span><span class="number">.0</span><span class="number">.2</span> master</span><br><span class="line"><span class="number">35.220</span><span class="number">.192</span><span class="number">.5</span> slave1</span><br><span class="line"><span class="number">35.194</span><span class="number">.98</span><span class="number">.118</span> slave2</span><br><span class="line"><span class="number">35.198</span><span class="number">.237</span><span class="number">.108</span> slave3</span><br></pre></td></tr></table></figure>
+<p>在host文件追加上面四条记录，值得注意的是我搭建环境使用的google云，<strong>master节点要使用内网地址</strong>，其余slave节点可以使用公网ip。腾讯云阿里云应该也是类似的，要是都在同一个内网环境下就直接都用内网ip就好了。</p>
+<h2 id="安装java环境"><a href="#安装java环境" class="headerlink" title="安装java环境"></a>安装java环境</h2><p>hadoop使用java开发，所以需要java环境</p>
+<h2 id="配置ssh免密码"><a href="#配置ssh免密码" class="headerlink" title="配置ssh免密码"></a>配置ssh免密码</h2><p>namenode和datanode直接要进行通信，相互之间要配置免密码ssh。</p>
+<h3 id="在每台机器上都生成密码对"><a href="#在每台机器上都生成密码对" class="headerlink" title="在每台机器上都生成密码对"></a>在每台机器上都生成密码对</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 都进入bigdata用户的目录</span></span><br><span class="line">cd ~</span><br><span class="line"><span class="comment">// 都在bigdata的目录下生成密钥对，将来就是用bigdata用户进行通信</span></span><br><span class="line">ssh-keygen -t rsa</span><br><span class="line"><span class="comment">// 一路回车就能免密码</span></span><br></pre></td></tr></table></figure>
+<h3 id="master操作"><a href="#master操作" class="headerlink" title="master操作"></a>master操作</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd ~/.ssh</span><br><span class="line">touch authorized_keys</span><br><span class="line"><span class="comment">// 将本机的公钥追加到自身的authorized_keys文件</span></span><br><span class="line">ssh-copy-id <span class="number">35.234</span><span class="number">.37</span><span class="number">.35</span></span><br><span class="line"><span class="comment">// 将authorized_keys文件传送到slave1主机</span></span><br><span class="line">scp authorized_keys <span class="number">35.220</span><span class="number">.192</span><span class="number">.5</span>:/home/bigdata/.ssh/</span><br></pre></td></tr></table></figure>
+<h3 id="slave1操作"><a href="#slave1操作" class="headerlink" title="slave1操作"></a>slave1操作</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd ~/.ssh</span><br><span class="line"><span class="comment">// 将本机的公钥追加到自身的authorized_keys文件</span></span><br><span class="line">ssh-copy-id <span class="number">35.220</span><span class="number">.192</span><span class="number">.5</span></span><br><span class="line"><span class="comment">// 将authorized_keys文件传送到slave2主机</span></span><br><span class="line">scp authorized_keys <span class="number">35.194</span><span class="number">.98</span><span class="number">.118</span>:/home/bigdata/.ssh/</span><br></pre></td></tr></table></figure>
+<h3 id="slave2操作"><a href="#slave2操作" class="headerlink" title="slave2操作"></a>slave2操作</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd ~/.ssh</span><br><span class="line"><span class="comment">// 将本机的公钥追加到自身的authorized_keys文件</span></span><br><span class="line">ssh-copy-id <span class="number">35.194</span><span class="number">.98</span><span class="number">.118</span></span><br><span class="line"><span class="comment">// 将authorized_keys文件传送到slave3主机</span></span><br><span class="line">scp authorized_keys <span class="number">35.198</span><span class="number">.237</span><span class="number">.108</span>:/home/bigdata/.ssh/</span><br></pre></td></tr></table></figure>
+<h3 id="slave3操作"><a href="#slave3操作" class="headerlink" title="slave3操作"></a>slave3操作</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cd ~/.ssh</span><br><span class="line"><span class="comment">// 将本机的公钥追加到自身的authorized_keys文件</span></span><br><span class="line">ssh-copy-id <span class="number">35.198</span><span class="number">.237</span><span class="number">.108</span></span><br><span class="line"><span class="comment">// 此时anth文件就汇集了斯泰主机的公钥</span></span><br><span class="line"><span class="comment">// 将authorized_keys文件传送到其余三台主机</span></span><br><span class="line">scp authorized_keys <span class="number">35.234</span><span class="number">.37</span><span class="number">.35</span>:/home/bigdata/.ssh/</span><br><span class="line">scp authorized_keys <span class="number">35.220</span><span class="number">.192</span><span class="number">.5</span>:/home/bigdata/.ssh/</span><br><span class="line">scp authorized_keys <span class="number">35.194</span><span class="number">.98</span><span class="number">.118</span>:/home/bigdata/.ssh/</span><br></pre></td></tr></table></figure>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ ssh bigdata<span class="meta">@slave2</span></span><br><span class="line">Last login: Sun Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">22</span>:<span class="number">34</span> <span class="number">2018</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">3</span> ~]$ ssh bigdata<span class="meta">@master</span></span><br><span class="line">Last login: Sun Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">22</span>:<span class="number">29</span> <span class="number">2018</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ ssh bigdata<span class="meta">@slave1</span></span><br><span class="line">Last login: Sun Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">22</span>:<span class="number">34</span> <span class="number">2018</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">2</span> ~]$ ssh bigdata<span class="meta">@slave3</span></span><br><span class="line">Last login: Sun Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">22</span>:<span class="number">34</span> <span class="number">2018</span></span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">4</span> ~]$</span><br></pre></td></tr></table></figure>
+<h1 id="安装配置hadoop"><a href="#安装配置hadoop" class="headerlink" title="安装配置hadoop"></a>安装配置hadoop</h1><h2 id="下载解压"><a href="#下载解压" class="headerlink" title="下载解压"></a>下载解压</h2><p>到官网下载tar包，解压到本地，我解压到了<code>/usr/local</code>下面</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget -c http:<span class="comment">//ftp.wayne.edu/apache/hadoop/common/hadoop-2.7.7/hadoop-2.7.7.ta​​r.gz</span></span><br><span class="line">tar -zxvf hadoop-<span class="number">2.7</span><span class="number">.7</span>.ta​​r.gz -C /usr/local/</span><br></pre></td></tr></table></figure>
+<h2 id="修改配置"><a href="#修改配置" class="headerlink" title="修改配置"></a>修改配置</h2><h3 id="core-site-xml"><a href="#core-site-xml" class="headerlink" title="core-site.xml"></a>core-site.xml</h3><p>${HADOOP_HOME}/etc/hadoop/core-site.xml</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs:<span class="comment">//master:9000&lt;/value&gt;</span></span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;io.file.buffer.size&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;131072&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/bigdata/hadoop/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="hdfs-site-xml"><a href="#hdfs-site-xml" class="headerlink" title="hdfs-site.xml"></a>hdfs-site.xml</h3><p>${HADOOP_HOME}/etc/hadoop/hdfs-site.xml</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.secondary.http-address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.name.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/bigdata/hadoop/name&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.datanode.data.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/bigdata/hadoop/data&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;3&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.webhdfs.enabled&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="yarn-site-xml"><a href="#yarn-site-xml" class="headerlink" title="yarn-site.xml"></a>yarn-site.xml</h3><p>${HADOOP_HOME}/etc/hadoop/yarn-site.xml</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.nodemanager.aux-services&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;mapreduce_shuffle&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.nodemanager.aux-services.mapreduce.shuffle.class&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;org.apache.hadoop.mapred.ShuffleHandler&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:8032&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.scheduler.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:8030&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.resource-tracker.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:8031&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.admin.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:8033&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.webapp.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:8088&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.nodemanager.resource.memory-mb&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;1024&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="mapred-site-xml"><a href="#mapred-site-xml" class="headerlink" title="mapred-site.xml"></a>mapred-site.xml</h3><p>${HADOOP_HOME}/etc/hadoop/mapred-site.xml</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.framework.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;yarn&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:10020&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.webapp.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;master:19888&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="slaves"><a href="#slaves" class="headerlink" title="slaves"></a>slaves</h3><p>${HADOOP_HOME}/etc/hadoop/slaves</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">slave1</span><br><span class="line">slave2</span><br><span class="line">slave3</span><br></pre></td></tr></table></figure>
+<h3 id="hadoop-env-sh与yarn-env-sh"><a href="#hadoop-env-sh与yarn-env-sh" class="headerlink" title="hadoop-env.sh与yarn-env.sh"></a>hadoop-env.sh与yarn-env.sh</h3><p>修改JAVA_HOME如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_HOME=/usr/local/jdk1<span class="number">.8</span><span class="number">.0_191</span></span><br></pre></td></tr></table></figure>
+<h2 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h2><p>将配置好的hadoop整个目录传送到集群其他主机上</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span> slave1:/usr/local/</span><br><span class="line">scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span> slave2:/usr/local/</span><br><span class="line">scp /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span> slave3:/usr/local/</span><br></pre></td></tr></table></figure>
+<h2 id="环境变量配置"><a href="#环境变量配置" class="headerlink" title="环境变量配置"></a>环境变量配置</h2><p>使用root账户分别在集群中每台上的/etc/profile文件追加如下环境变量</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_HOME=/usr/local/jdk1<span class="number">.8</span><span class="number">.0_191</span></span><br><span class="line">export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar</span><br><span class="line"></span><br><span class="line">export HADOOP_HOME=/usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span></span><br><span class="line">export HADOOP_COMMON_HOME=$HADOOP_HOME</span><br><span class="line">export HADOOP_HDFS_HOME=$HADOOP_HOME</span><br><span class="line">export HADOOP_YARN_HOME=$HADOOP_HOME</span><br><span class="line">export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop</span><br><span class="line">export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/<span class="keyword">native</span></span><br><span class="line">export HADOOP_OPTS=<span class="string">&quot;-Djava.library.path=$HADOOP_HOME/lib&quot;</span></span><br><span class="line">export LD_LIBRARY_PATH=$HADOOP_HOME/lib/<span class="keyword">native</span></span><br><span class="line"></span><br><span class="line">export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$HADOOP_HOME/lib</span><br></pre></td></tr></table></figure>
+<h1 id="初始化及运行"><a href="#初始化及运行" class="headerlink" title="初始化及运行"></a>初始化及运行</h1><p>使用bigdata用户在master主机上执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs namenode -format</span><br></pre></td></tr></table></figure>
+<p>如果看到<code>successfully formatted</code>字样表示格式化成功<br>接下来是启动</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">start-dfs.sh</span><br><span class="line">start-yarn.sh</span><br></pre></td></tr></table></figure>
+<p>使用jps命令查看结果<br><img src="http://file.ornobug.top/hadoop/jps.png"><br>hadoop启动成功<br>通过web查看namenode<br><img src="http://file.ornobug.top/hadoop/namenode-web.png"></p>
+<h1 id="安装遇到的问题"><a href="#安装遇到的问题" class="headerlink" title="安装遇到的问题"></a>安装遇到的问题</h1><p>遇到问题看日志</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> ~]$ cd /usr/local/hadoop-<span class="number">2.7</span><span class="number">.7</span>/logs/</span><br><span class="line">[bigdata<span class="meta">@hdp</span>-<span class="number">1</span> logs]$ ll</span><br><span class="line">total <span class="number">604</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root <span class="number">166171</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">20</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>log</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">717</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">10</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>out</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root   <span class="number">4960</span> Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">01</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>out<span class="number">.1</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">718</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">47</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>out<span class="number">.2</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">718</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">39</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>out<span class="number">.3</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">717</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">32</span> hadoop-bigdata-namenode-hdp-<span class="number">1.</span>out<span class="number">.4</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root <span class="number">115386</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">11</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>log</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">717</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">10</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>out</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">718</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">59</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>out<span class="number">.1</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">718</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">47</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>out<span class="number">.2</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">718</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">39</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>out<span class="number">.3</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">717</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">33</span> hadoop-bigdata-secondarynamenode-hdp-<span class="number">1.</span>out<span class="number">.4</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root      <span class="number">0</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">32</span> hadoop.log</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root      <span class="number">0</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">32</span> SecurityAuth-bigdata.audit</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root <span class="number">213465</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">24</span> yarn-bigdata-resourcemanager-hdp-<span class="number">1.</span>log</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root   <span class="number">1524</span> Dec <span class="number">16</span> <span class="number">07</span>:<span class="number">11</span> yarn-bigdata-resourcemanager-hdp-<span class="number">1.</span>out</span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root   <span class="number">1524</span> Dec <span class="number">16</span> <span class="number">06</span>:<span class="number">00</span> yarn-bigdata-resourcemanager-hdp-<span class="number">1.</span>out<span class="number">.1</span></span><br><span class="line">-rw-r--r--. <span class="number">1</span> bigdata root    <span class="number">701</span> Dec <span class="number">16</span> <span class="number">05</span>:<span class="number">51</span> yarn-bigdata-resourcemanager-hdp-<span class="number">1.</span>out<span class="number">.2</span></span><br></pre></td></tr></table></figure>
+<p>也可以通过改变日志级别查看更详细的日志</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export HADOOP_ROOT_LOGGER=DEBUG,console</span><br></pre></td></tr></table></figure>
+<h2 id="Cannot-assign-requested-address"><a href="#Cannot-assign-requested-address" class="headerlink" title="Cannot assign requested address"></a>Cannot assign requested address</h2><p>遇到这个问题就是因为用的公有云，各个主机不在同一个内网，hosts文件中master配置为内网ip就好了。</p>
+<h2 id="权限问题导致namenode或者datanode无法启动"><a href="#权限问题导致namenode或者datanode无法启动" class="headerlink" title="权限问题导致namenode或者datanode无法启动"></a>权限问题导致namenode或者datanode无法启动</h2><p>有的文件属主可能是<code>root:root</code>，将hadoop的安装目录及tmp、data、name目录的属主都设置成<code>bigdata:root</code>就可以了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" data-id="ckjr4vdyt000pf0uk0hwsb01j" data-title="hadoop集群搭建" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hadoop/" rel="tag">hadoop</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-linux-文件管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2018-10-26T10:56:51.000Z" itemprop="datePublished">2018-10-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/">linux-文件管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="1-文件和目录管理"><a href="#1-文件和目录管理" class="headerlink" title="1. 文件和目录管理"></a>1. 文件和目录管理</h1><h2 id="1-1-文件操作"><a href="#1-1-文件操作" class="headerlink" title="1.1 文件操作"></a>1.1 文件操作</h2><h3 id="1-1-1-head"><a href="#1-1-1-head" class="headerlink" title="1.1.1 head"></a>1.1.1 head</h3><p><code>head</code>用于查看文件的头部内容，默认查看10行，加上<code>-n</code>参数可以指定要看多少行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@lzmvm /usr/local/tieba/logs]#head info.log</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">01</span> [main:<span class="number">0</span>]-[INFO] ==========签到开始==========</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">01</span> [main:<span class="number">51</span>]-[INFO] 第 <span class="number">1</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=1</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">03</span> [main:<span class="number">2382</span>]-[INFO] 第 <span class="number">2</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=2</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">05</span> [main:<span class="number">3651</span>]-[INFO] 第 <span class="number">3</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=3</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">06</span> [main:<span class="number">4903</span>]-[INFO] 第 <span class="number">4</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=4</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">07</span> [main:<span class="number">6190</span>]-[INFO] 第 <span class="number">5</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=5</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:08 [main:<span class="number">7578</span>]-[INFO] 待签到贴吧共 <span class="number">47</span> 个</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">10</span> [main:<span class="number">8979</span>]-[INFO] <span class="number">1</span> 部落战争 签到成功,第 <span class="number">9</span> 位在本吧签到</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">11</span> [main:<span class="number">10252</span>]-[INFO] <span class="number">2</span> chrome 签到成功,第 <span class="number">16</span> 位在本吧签到</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">12</span> [main:<span class="number">11572</span>]-[INFO] <span class="number">3</span> 南京理工大学 签到成功,第 <span class="number">2</span> 位在本吧签到</span><br><span class="line">[root@lzmvm /usr/local/tieba/logs]#head -n 25 info.log</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">01</span> [main:<span class="number">0</span>]-[INFO] ==========签到开始==========</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">01</span> [main:<span class="number">51</span>]-[INFO] 第 <span class="number">1</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=1</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">03</span> [main:<span class="number">2382</span>]-[INFO] 第 <span class="number">2</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=2</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">05</span> [main:<span class="number">3651</span>]-[INFO] 第 <span class="number">3</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=3</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">06</span> [main:<span class="number">4903</span>]-[INFO] 第 <span class="number">4</span> 页，url: http:<span class="comment">//tieba.baidu.com/home/concern?is_ajax=1&amp;pn=4</span></span><br></pre></td></tr></table></figure>
+<h3 id="1-1-2-tail"><a href="#1-1-2-tail" class="headerlink" title="1.1.2 tail"></a>1.1.2 tail</h3><p>查看文件尾部内容，默认查看后10行，<code>-n</code>参数同样指定行数，<code>-f</code>可以监视文件内容的变化如果没有内容变动只会显示后10行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@lzmvm /usr/local/tieba/logs]#tail info.log</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">03</span> [main:<span class="number">55711</span>]-[INFO] <span class="number">40</span> 极限竞速地平线<span class="number">3</span> 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">04</span> [main:<span class="number">56845</span>]-[INFO] <span class="number">41</span> 公路交易 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">05</span> [main:<span class="number">57979</span>]-[INFO] <span class="number">42</span> 耳机 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">06</span> [main:<span class="number">59100</span>]-[INFO] <span class="number">43</span> 李毅 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">07</span> [main:<span class="number">60219</span>]-[INFO] <span class="number">44</span> 天行九歌 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:08 [main:<span class="number">61353</span>]-[INFO] <span class="number">45</span> 车祸 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">10</span> [main:<span class="number">62495</span>]-[INFO] <span class="number">46</span> test 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] <span class="number">47</span> 树莓派 签到成功,第 <span class="number">948</span> 位在本吧签到</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] 本次签到 成功:<span class="number">1</span> 失败:<span class="number">0</span> 已签:<span class="number">46</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] ==========签到结束==========</span><br><span class="line">[root@lzmvm /usr/local/tieba/logs]#tail -n 5 info.log</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:08 [main:<span class="number">61353</span>]-[INFO] <span class="number">45</span> 车祸 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">10</span> [main:<span class="number">62495</span>]-[INFO] <span class="number">46</span> test 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] <span class="number">47</span> 树莓派 签到成功,第 <span class="number">948</span> 位在本吧签到</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] 本次签到 成功:<span class="number">1</span> 失败:<span class="number">0</span> 已签:<span class="number">46</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] ==========签到结束==========</span><br><span class="line">[root@lzmvm /usr/local/tieba/logs]#tail -f info.log  </span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">03</span> [main:<span class="number">55711</span>]-[INFO] <span class="number">40</span> 极限竞速地平线<span class="number">3</span> 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">04</span> [main:<span class="number">56845</span>]-[INFO] <span class="number">41</span> 公路交易 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">05</span> [main:<span class="number">57979</span>]-[INFO] <span class="number">42</span> 耳机 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">06</span> [main:<span class="number">59100</span>]-[INFO] <span class="number">43</span> 李毅 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">07</span> [main:<span class="number">60219</span>]-[INFO] <span class="number">44</span> 天行九歌 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:08 [main:<span class="number">61353</span>]-[INFO] <span class="number">45</span> 车祸 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">10</span> [main:<span class="number">62495</span>]-[INFO] <span class="number">46</span> test 签到失败: 亲，你之前已经签过了</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] <span class="number">47</span> 树莓派 签到成功,第 <span class="number">948</span> 位在本吧签到</span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] 本次签到 成功:<span class="number">1</span> 失败:<span class="number">0</span> 已签:<span class="number">46</span></span><br><span class="line"><span class="number">2018</span>-<span class="number">10</span>-<span class="number">26</span> 08:<span class="number">01</span>:<span class="number">11</span> [main:<span class="number">63673</span>]-[INFO] ==========签到结束==========</span><br><span class="line">| &lt;== 此处会处于刷新状态，一旦内容增加，新的一行内容会打印出来</span><br></pre></td></tr></table></figure>
+<h3 id="1-1-3-dos2unix"><a href="#1-1-3-dos2unix" class="headerlink" title="1.1.3 dos2unix"></a>1.1.3 dos2unix</h3><p>将windows下的文件转为linux下的文件，替换一些换行符之类的</p>
+<h2 id="1-2-目录操作"><a href="#1-2-目录操作" class="headerlink" title="1.2 目录操作"></a>1.2 目录操作</h2><h3 id="1-2-1-mkdir"><a href="#1-2-1-mkdir" class="headerlink" title="1.2.1 mkdir"></a>1.2.1 mkdir</h3><p>普通创建目录</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 在当前目录下创建test目录，相对路径方式</span><br><span class="line">mkdir test</span><br><span class="line"># 在/usr/local目录下创建test目录，绝对路径方式</span><br><span class="line">mkdir /usr/local/test</span><br></pre></td></tr></table></figure>
+<p>递归创建目录</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /usr/local/test_1/test_2/test_3</span><br></pre></td></tr></table></figure>
+<h3 id="1-2-2-rmdir-rm"><a href="#1-2-2-rmdir-rm" class="headerlink" title="1.2.2 rmdir/rm"></a>1.2.2 rmdir/rm</h3><p>rmdir 只能删除空目录，<code>rm -r</code>可以删除非空目录，但是会提示是否删除目录，可以使用<code>rm -rf</code>来直接删除</p>
+<h1 id="2-文件和目录的权限"><a href="#2-文件和目录的权限" class="headerlink" title="2. 文件和目录的权限"></a>2. 文件和目录的权限</h1><h2 id="2-1-ls-al"><a href="#2-1-ls-al" class="headerlink" title="2.1 ls -al"></a>2.1 ls -al</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# ls -al</span><br><span class="line">总用量 <span class="number">4256</span></span><br><span class="line">dr-xr-x---.  <span class="number">3</span> root root    <span class="number">4096</span> <span class="number">10</span>月 <span class="number">26</span> <span class="number">11</span>:<span class="number">37</span> .</span><br><span class="line">dr-xr-xr-x. <span class="number">17</span> root root     <span class="number">224</span> <span class="number">10</span>月 <span class="number">23</span> <span class="number">10</span>:<span class="number">02</span> ..</span><br><span class="line">-rw-------.  <span class="number">1</span> root root    <span class="number">1258</span> <span class="number">10</span>月 <span class="number">23</span> <span class="number">10</span>:<span class="number">03</span> anaconda-ks.cfg</span><br><span class="line">-rw-------.  <span class="number">1</span> root root    <span class="number">4428</span> <span class="number">10</span>月 <span class="number">26</span> <span class="number">13</span>:<span class="number">51</span> .bash_history</span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root      <span class="number">18</span> <span class="number">12</span>月 <span class="number">29</span> <span class="number">2013</span> .bash_logout</span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root     <span class="number">176</span> <span class="number">12</span>月 <span class="number">29</span> <span class="number">2013</span> .bash_profile</span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root     <span class="number">217</span> <span class="number">10</span>月 <span class="number">24</span> <span class="number">17</span>:<span class="number">30</span> .bashrc</span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root     <span class="number">100</span> <span class="number">12</span>月 <span class="number">29</span> <span class="number">2013</span> .cshrc</span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root       <span class="number">2</span> <span class="number">10</span>月 <span class="number">25</span> <span class="number">18</span>:<span class="number">36</span> echo.txt</span><br><span class="line">drwxrwxr-x.  <span class="number">6</span> root root    <span class="number">4096</span> <span class="number">10</span>月 <span class="number">24</span> <span class="number">17</span>:<span class="number">27</span> manpages-zh-<span class="number">1.6</span><span class="number">.2</span><span class="number">.1</span></span><br><span class="line">-rw-r--r--.  <span class="number">1</span> root root     <span class="number">129</span> <span class="number">12</span>月 <span class="number">29</span> <span class="number">2013</span> .tcshrc</span><br></pre></td></tr></table></figure>
+<p>这里面有几部分</p>
+<ul>
+<li><p>drwxrwxr-x:这部分代表文件类别和权限，共10个字符，第一个字符表示文件类型</p>
+<ul>
+<li>d:目录</li>
+<li>-:普通文件</li>
+<li>l:链接文件</li>
+<li>b:块文件</li>
+<li>c:字符文件</li>
+<li>s:socket文件</li>
+<li>p:管道文件<br>其余九位分三部分，第一部分代表该文件的所有者(user)的权限，第二部分代表文件所有者组(group)的权限，第三部分是其他用户(others)的权限。每一部分又分三个字母，依次代表可读(r)、可写(w)和可执行(x)的权限，如果没有相应的权限就是小横线<code>-</code>。<br>举例来说，文件的类型是目录，用户权限是可读、可写并且可执行，用户组的权限也是可读、可写并且可执行，但是其他用户的权限的可读、不可写、可执行。</li>
+</ul>
+</li>
+<li><p>6:这个部分是连接数，表示有多少文件与之相连接，除了目录文件，其他所有文件的连接数都是1，目录文件的连接数是其下面文件数加上2，这个2是因为每隔目录下都有两个特殊的目录<code>.</code>和<code>..</code>。这里的6，就表示该目录下实际有四个普通文件或文件夹</p>
+</li>
+<li><p>root:这个第一个root表示文件所有者</p>
+</li>
+<li><p>root:第二个root表示文件所有者所在组</p>
+</li>
+<li><p>4096:这个表示文件的大小，这里就表示这个文件夹是4096个byte大小</p>
+</li>
+<li><p>10月 24 17:27:表示该文件的最近修改时间</p>
+</li>
+<li><p>manpages-zh-1.6.2.1:这就是文件名了</p>
+</li>
+</ul>
+<h2 id="2-2-文件默认属性"><a href="#2-2-文件默认属性" class="headerlink" title="2.2 文件默认属性"></a>2.2 文件默认属性</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# touch test_default.txt</span><br><span class="line">[root@fq ~]# mkdir test_default</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">drwxr-xr-x. <span class="number">2</span> root            root                   <span class="number">6</span> Nov  <span class="number">4</span> <span class="number">13</span>:<span class="number">32</span> test_default</span><br><span class="line">-rw-r--r--. <span class="number">1</span> root            root                   <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">13</span>:<span class="number">32</span> test_default.txt</span><br></pre></td></tr></table></figure>
+<p>可以看出root用户创建文件的默认权限是644，目录是755</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[myworld20151124<span class="meta">@fq</span> ~]$ touch test_default.txt</span><br><span class="line">[myworld20151124<span class="meta">@fq</span> ~]$ mkdir test_default</span><br><span class="line">[myworld20151124<span class="meta">@fq</span> ~]$ ll</span><br><span class="line">drwxrwxr-x. <span class="number">2</span> myworld20151124 myworld20151124         <span class="number">6</span> Nov  <span class="number">4</span> <span class="number">13</span>:<span class="number">34</span> test_default</span><br><span class="line">-rw-rw-r--. <span class="number">1</span> myworld20151124 myworld20151124         <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">13</span>:<span class="number">34</span> test_default.txt</span><br></pre></td></tr></table></figure>
+<p>可以看出普通用户创建文件的默认权限是775，目录是664<br>为什么是这样呢？看下<code>/etc/profile</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ $UID -gt <span class="number">199</span> ] &amp;&amp; [ <span class="string">&quot;`/usr/bin/id -gn`&quot;</span> = <span class="string">&quot;`/usr/bin/id -un`&quot;</span> ]; then</span><br><span class="line">    umask <span class="number">002</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    umask <span class="number">022</span></span><br><span class="line">fi</span><br></pre></td></tr></table></figure>
+<p>可以看出用户id大于199时，权限遮罩为002，小于199遮罩为022。遮罩002的意思是在<code>others</code>这部分权限去掉<code>w</code>权限，而022是在<code>group</code>和<code>others</code>d的部分都去掉<code>w</code>权限</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-rwxrwxrwx =&gt; 遮罩<span class="number">002</span> =&gt; -rwxrwxr-x <span class="number">775</span></span><br><span class="line">-rwxrwxrwx =&gt; 遮罩<span class="number">022</span> =&gt; -rwxr-xr-x <span class="number">755</span></span><br><span class="line">-rw-rw-rw- =&gt; 遮罩<span class="number">002</span> =&gt; -rw-rw-r-- <span class="number">664</span></span><br><span class="line">-rw-rw-rw- =&gt; 遮罩<span class="number">022</span> =&gt; -rw-r--r-- <span class="number">644</span></span><br></pre></td></tr></table></figure>
+<h2 id="2-3-文件隐藏属性"><a href="#2-3-文件隐藏属性" class="headerlink" title="2.3 文件隐藏属性"></a>2.3 文件隐藏属性</h2><p><code>lsattr</code>可以查看文件的隐藏属性，默认情况下，文件的隐藏属性没有设置，使用<code>lsattr</code>只会得到一些横线。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# lsattr</span><br><span class="line">---------------- ./mysql57-community-release-el7-<span class="number">11.</span>noarch.rpm</span><br></pre></td></tr></table></figure>
+<p>可以通过<code>chattr</code>为文件加上隐藏属性，比如<code>a</code>属性，加上这种属性会导致只能在尾部增加数据而不能被删除；加上<code>i</code>属性，会导致文件无法写入、改名或者删除，常用于系统关键的配置文件。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# chattr +a test.sh</span><br><span class="line">[root@fq ~]# rm -rf test.sh</span><br><span class="line">rm: cannot remove ‘test.sh’: Operation not permitted</span><br><span class="line"></span><br><span class="line">[root@fq ~]# chattr +i test.sh</span><br><span class="line">[root@fq ~]# mv test.sh test.sh.bak</span><br><span class="line">mv: cannot move ‘test.sh’ to ‘test.sh.bak’: Operation not permitted</span><br></pre></td></tr></table></figure>
+<h2 id="2-4-文件特殊属性"><a href="#2-4-文件特殊属性" class="headerlink" title="2.4 文件特殊属性"></a>2.4 文件特殊属性</h2><h3 id="2-4-1-SUID"><a href="#2-4-1-SUID" class="headerlink" title="2.4.1 SUID"></a>2.4.1 SUID</h3><p>查看<code>/usr/bin/passwd</code>的信息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# ll /usr/bin/passwd</span><br><span class="line">-rwsr-xr-x. <span class="number">1</span> root root <span class="number">27832</span> Jun <span class="number">10</span>  <span class="number">2014</span> /usr/bin/passwd</span><br></pre></td></tr></table></figure>
+<p>可以看到有一个奇怪的<code>s</code>权限设置在文件所有者上，含义是让本来没有相应权限的用户运行这个程序时，可以访问他没有权限访问的资源。<br>简单理解<code>SUID</code><br>1、SUID权限仅对二进制程序(binary program)有效；<br>2、执行者对于该程序需要具有x的可执行权限；<br>3、本权限仅在执行该程序的过程中有效(run-time)；<br>4、执行者将具有该程序拥有者(owner)的权限。<br>简单理解下<code>passwd</code>命令<br>1、因为/usr/bin/passwd的权限对任何的用户都是可以执行的，所以系统中每个用户都可以执行此命令。<br>2、而/usr/bin/passwd这个文件的权限是属于root的。<br>3、当某个用户执行/usr/bin/passwd命令的时候，就拥有了root的权限了。<br>4、于是某个用户就可以借助root用户的权力，来修改了/etc/shadow文件了。<br>5、最后，把密码修改成功</p>
+<p><strong>注：</strong> 这个SUID只能运行在二进制的程序上（系统中的一些命令），不能用在脚本上（script），因为脚本还是把很多的程序集合到一起来执行，而不是脚本自身在执行。同样，这个SUID也不能放到目录上，放上也是无效的。</p>
+<p>可以通过<code>chmod u+s somebin</code>或者<code>chmod u-s somebin</code>进行设置</p>
+<h3 id="2-4-2-SGID"><a href="#2-4-2-SGID" class="headerlink" title="2.4.2 SGID"></a>2.4.2 SGID</h3><p>和SUID一样，只是SGID是获得该程序所属用户组的权限。<br>这相SGID有几点需要我们注意：<br>1、SGID对二进制程序有用；<br>2、程序执行者对于该程序来说，需具备x的权限；<br>3、SGID主要用在目录上；<br>理解了SUID，我想SGID也很容易理解。如果用户在此目录下具有w权限的话，若使用者在此目录下建立新文件，则新文件的群组与此目录的群组相同。<br>可以通过<code>chmod g+s somebin</code>或者<code>chmod g-s somebin</code>进行设置</p>
+<h3 id="2-4-3-Sticky"><a href="#2-4-3-Sticky" class="headerlink" title="2.4.3 Sticky"></a>2.4.3 Sticky</h3><p>这个就是针对others来设置的了，和上面两个一样，只是功能不同而已。<br>SBIT（Sticky Bit）目前只针对目录有效，对于目录的作用是：当用户在该目录下建立文件或目录时，仅有自己与 root才有权力删除。<br>最具有代表的就是/tmp目录，任何人都可以在/tmp内增加、修改文件（因为权限全是rwx），但仅有该文件/目录建立者与 root能够删除自己的目录或文件。<br><strong>注：</strong> 这个SBIT对文件不起作用。<br>可以通过<code>chmod o+t somedir</code>或者<code>chmod o-t somedir</code>进行设置</p>
+<h2 id="2-5-chmod"><a href="#2-5-chmod" class="headerlink" title="2.5 chmod"></a>2.5 chmod</h2><table>
+<thead>
+<tr>
+<th align="center">命令</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">chmod u+r test.txt</td>
+<td align="center">为文件所有者加上可读权限</td>
+</tr>
+<tr>
+<td align="center">chmod u-r test.txt</td>
+<td align="center">为文件所有者去除可读权限</td>
+</tr>
+<tr>
+<td align="center">chmod u+w test.txt</td>
+<td align="center">为文件所有者加上可写权限</td>
+</tr>
+<tr>
+<td align="center">chmod u-w test.txt</td>
+<td align="center">为文件所有者去除可写权限</td>
+</tr>
+<tr>
+<td align="center">chmod u+x test.txt</td>
+<td align="center">为文件所有者加上可执行权限</td>
+</tr>
+<tr>
+<td align="center">chmod u-x test.txt</td>
+<td align="center">为文件所有者去除可执行权限</td>
+</tr>
+<tr>
+<td align="center">chmod u+rwx test.txt</td>
+<td align="center">为文件所有者加上可读、可写、可执行权限</td>
+</tr>
+<tr>
+<td align="center">chmod u-rwx test.txt</td>
+<td align="center">为文件所有者去除可读、可写、可执行权限</td>
+</tr>
+<tr>
+<td align="center">chmod u=rwx test.txt</td>
+<td align="center">为文件所有者指定可读、可写、可执行权限</td>
+</tr>
+<tr>
+<td align="center">如果要对文件<code>所有者组</code>或者<code>其他人</code>进行权限操作，<code>u</code>换成<code>g</code>或<code>o</code>即可。</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">也可以使用数字进行权限赋值</td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="center">权限</th>
+<th align="center">数字</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">r</td>
+<td align="center">4</td>
+</tr>
+<tr>
+<td align="center">w</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">x</td>
+<td align="center">1</td>
+</tr>
+</tbody></table>
+<p>当我们为某个文件设置权限时，用数字表示<code>chmod 765 test.sh</code>，这里的<code>7</code>表示文件所有者权限为<code>rwx</code>,<code>6</code>表示文件所有者组权限为<code>rw-</code>,<code>5</code>表示其他人权限为<code>r-x</code>。<br>当要为一个文件夹进行权限设置操作，可以使用<code>- R</code>参数，比如<code>chmod -R 666 root_dir</code>。</p>
+<h2 id="2-6-chown"><a href="#2-6-chown" class="headerlink" title="2.6 chown"></a>2.6 chown</h2><p>chown可以改变文件所有者或文件所有者组</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# touch test_chown.txt</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> root            root                   <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br><span class="line"></span><br><span class="line">[root@fq ~]# chown myworld20151124 test_chown.txt</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> myworld20151124 root                   <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br><span class="line"></span><br><span class="line">[root@fq ~]# chown :myworld20151124 test_chown.txt</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> myworld20151124 myworld20151124         <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br><span class="line"></span><br><span class="line">[root@fq ~]# chown root:root test_chown.txt</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> root            root                   <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br></pre></td></tr></table></figure>
+<p>如果改变目录的所有者或者所有者组，加上参数<code>- R</code>即可</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# mkdir -p test_chown/1/2/3</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">drwxr-xr-x. <span class="number">3</span> root            root                  <span class="number">15</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">34</span> test_chown</span><br><span class="line">[root@fq ~]# chown -R myworld20151124:myworld20151124 test_chown</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">drwxr-xr-x. <span class="number">3</span> myworld20151124 myworld20151124        <span class="number">15</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">34</span> test_chown</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="2-7-chgrp"><a href="#2-7-chgrp" class="headerlink" title="2.7 chgrp"></a>2.7 chgrp</h2><p>chgrp可以改变文件所有者组</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> root            root                    <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br><span class="line">[root@fq ~]# chgrp myworld20151124 test_chown.txt</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">-rw-r--r--. <span class="number">1</span> root            myworld20151124         <span class="number">0</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">21</span> test_chown.txt</span><br></pre></td></tr></table></figure>
+<p>同样可以使用<code>-R</code>参数指定目录递归改变组</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# ll</span><br><span class="line">drwxr-xr-x. <span class="number">3</span> myworld20151124 myworld20151124        <span class="number">15</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">34</span> test_chown</span><br><span class="line">[root@fq ~]# chgrp -R root test_chown</span><br><span class="line">[root@fq ~]# ll</span><br><span class="line">drwxr-xr-x. <span class="number">3</span> myworld20151124 root                   <span class="number">15</span> Nov  <span class="number">4</span> <span class="number">12</span>:<span class="number">34</span> test_chown</span><br></pre></td></tr></table></figure>
+<h1 id="3-文件查找"><a href="#3-文件查找" class="headerlink" title="3. 文件查找"></a>3. 文件查找</h1><h2 id="3-1-file"><a href="#3-1-file" class="headerlink" title="3.1 file"></a>3.1 file</h2><p><code>file</code>命令可以查看文件类型<br>选项</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-b：列出辨识结果时，不显示文件名称；</span><br><span class="line">-c：详细显示指令执行过程，便于排错或分析程序执行的情形；</span><br><span class="line">-f&lt;名称文件&gt;：指定名称文件，其内容有一个或多个文件名称时，让file依序辨识这些文件，格式为每列一个文件名称；</span><br><span class="line">-L：直接显示符号连接所指向的文件类别；</span><br><span class="line">-m&lt;魔法数字文件&gt;：指定魔法数字文件；</span><br><span class="line">-v：显示版本信息；</span><br><span class="line">-z：尝试去解读压缩文件的内容。</span><br></pre></td></tr></table></figure>
+<p>参数:要确定类型的文件列表，多个文件之间使用空格分开，可以使用shell通配符匹配多个文件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# file install.log</span><br><span class="line">install.log: UTF-<span class="number">8</span> Unicode text</span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file -b install.log      &lt;== 不显示文件名称</span><br><span class="line">UTF-<span class="number">8</span> Unicode text</span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file -i install.log      &lt;== 显示MIME类别。</span><br><span class="line">install.log: text/plain; charset=utf-<span class="number">8</span></span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file -b -i install.log</span><br><span class="line">text/plain; charset=utf-<span class="number">8</span></span><br><span class="line"></span><br><span class="line">[root@localhost ~]# ls -l /var/mail</span><br><span class="line">lrwxrwxrwx <span class="number">1</span> root root <span class="number">10</span> 08-<span class="number">13</span> <span class="number">00</span>:<span class="number">11</span> /<span class="keyword">var</span>/mail -&gt; spool/mail</span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file /var/mail</span><br><span class="line">/<span class="keyword">var</span>/mail: symbolic link to <span class="string">&#x27;spool/mail&#x27;</span></span><br><span class="line"></span><br><span class="line"># 显示符号链接的文件类型</span><br><span class="line">[root@localhost ~]# file -L /var/mail</span><br><span class="line">/<span class="keyword">var</span>/mail: directory</span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file /var/spool/mail</span><br><span class="line">/<span class="keyword">var</span>/spool/mail: directory</span><br><span class="line"></span><br><span class="line">[root@localhost ~]# file -L /var/spool/mail</span><br><span class="line">/<span class="keyword">var</span>/spool/mail: directory</span><br></pre></td></tr></table></figure>
+<h2 id="3-2-find"><a href="#3-2-find" class="headerlink" title="3.2 find"></a>3.2 find</h2><table>
+<thead>
+<tr>
+<th align="center">参数</th>
+<th align="center">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">-name filename</td>
+<td align="center">查找文件名为filename的文件</td>
+</tr>
+<tr>
+<td align="center">-perm</td>
+<td align="center">根据文件权限查找</td>
+</tr>
+<tr>
+<td align="center">-user usernam</td>
+<td align="center">根据用户名查找</td>
+</tr>
+<tr>
+<td align="center">-mtime -n/+n</td>
+<td align="center">查找n天内/n天前更改过的文件</td>
+</tr>
+<tr>
+<td align="center">-atime -n/+n</td>
+<td align="center">查找n天内/n天前访问过的文件</td>
+</tr>
+<tr>
+<td align="center">-ctime -n/+n</td>
+<td align="center">查找n天内/n天前创建的文件</td>
+</tr>
+<tr>
+<td align="center">-newer filename</td>
+<td align="center">查看更改时间比filename新的文件</td>
+</tr>
+<tr>
+<td align="center">-type b/d/c/p/l/f/s</td>
+<td align="center">查找 块/目录/字符/管道/连接/普通/套接字 文件</td>
+</tr>
+<tr>
+<td align="center">-size</td>
+<td align="center">根据文件大小查找</td>
+</tr>
+<tr>
+<td align="center">-depth n</td>
+<td align="center">最大的查找目录深度</td>
+</tr>
+</tbody></table>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[myworld20151124<span class="meta">@fq</span> ~]$ find /etc/nginx -name *.conf</span><br><span class="line">/etc/nginx/fastcgi.conf</span><br><span class="line">/etc/nginx/nginx.conf</span><br><span class="line"># 不能直接使用*.*与*</span><br><span class="line">[myworld20151124<span class="meta">@fq</span> ~]$ find /etc/nginx -name nginx.*</span><br><span class="line">/etc/nginx/nginx.conf.<span class="keyword">default</span></span><br><span class="line">/etc/nginx/nginx.conf</span><br></pre></td></tr></table></figure>
+<h2 id="3-3-locate"><a href="#3-3-locate" class="headerlink" title="3.3 locate"></a>3.3 locate</h2><p>locate是使用系统文件数据库进行查找文件，比find效率高。但是需要在执行查找前执行<code>updatedb</code>更新系统文件数据库。</p>
+<ul>
+<li><p>命令格式: locate [选择参数] [样式]</p>
+</li>
+<li><p>命令功能: locate命令可以在搜寻数据库时快速找到档案，数据库由updatedb程序来更新，updatedb是由cron daemon周期性建立的，locate命令在搜寻数据库时比由整个由硬盘资料来搜寻资料来得快，但较差劲的是locate所找到的档案若是最近才建立或 刚更名的，可能会找不到，在内定值中，updatedb每天会跑一次，可以由修改crontab来更新设定值。(etc/crontab)<br>locate指定用在搜寻符合条件的档案，它会去储存档案与目录名称的数据库内，寻找合乎范本样式条件的档案或目录录，可以使用特殊字元（如<code>*</code> 或<code>?</code>等）来指定范本样式，如指定范本为kcpa*ner, locate会找出所有起始字串为kcpa且结尾为ner的档案或目录，如名称为kcpartner若目录录名称为kcpa_ner则会列出该目录下包括 子目录在内的所有档案。<br>locate指令和find找寻档案的功能类似，但locate是透过update程序将硬盘中的所有档案和目录资料先建立一个索引数据库，在 执行loacte时直接找该索引，查询速度会较快，索引数据库一般是由操作系统管理，但也可以直接下达update强迫系统立即修改索引数据库。</p>
+</li>
+<li><p>命令参数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-e 将排除在寻找的范围之外。</span><br><span class="line"></span><br><span class="line">-l 如果 是 <span class="number">1</span>．则启动安全模式。在安全模式下，使用者不会看到权限无法看到	的档案。这会始速度减慢，因为 locate 必须至实际的档案系统中取得档案的	权限资料。</span><br><span class="line">-f 将特定的档案系统排除在外，例如我们没有到理要把 proc 档案系统中的档案	放在资料库中。</span><br><span class="line">-q 安静模式，不会显示任何错误讯息。</span><br><span class="line">-n 至多显示 n个输出。</span><br><span class="line">-r 使用正规运算式 做寻找的条件。</span><br><span class="line">-o 指定资料库存的名称。</span><br><span class="line">-d 指定资料库的路径</span><br><span class="line">-h 显示辅助讯息</span><br><span class="line">-V 显示程式的版本讯息</span><br></pre></td></tr></table></figure></li>
+<li><p>使用实例：</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"># centos7 minimal 没有预装locate命令</span><br><span class="line">[root@fq ~]# yum -y install mlocate</span><br><span class="line">[root@fq ~]# updatedb</span><br><span class="line"># 实例1:查找和pwd相关的所有文件</span><br><span class="line">[root<span class="meta">@fq</span> ~]$ locate pwd</span><br><span class="line">/etc/.pwd.lock</span><br><span class="line">/usr/bin/pwd</span><br><span class="line">/usr/bin/pwdx</span><br><span class="line">/usr/include/pwd.h</span><br><span class="line">/usr/lib/modules/<span class="number">3.10</span><span class="number">.0</span>-<span class="number">693.21</span><span class="number">.1</span>.el7.x86_64/kernel/drivers/watchdog/hpwdt.ko.xz</span><br><span class="line">/usr/lib/modules/<span class="number">3.10</span><span class="number">.0</span>-<span class="number">693.</span>el7.x86_64/kernel/drivers/watchdog/hpwdt.ko.xz</span><br><span class="line">/usr/lib/modules/<span class="number">4.16</span><span class="number">.0</span>-<span class="number">1.</span>el7.elrepo.x86_64/kernel/drivers/watchdog/hpwdt.ko</span><br><span class="line">/usr/lib64/cracklib_dict.pwd</span><br><span class="line">/usr/lib64/python2<span class="number">.7</span>/lib-dynload/spwdmodule.so</span><br><span class="line">/usr/local/go/src/syscall/pwd_plan9.go</span><br><span class="line">/usr/sbin/unix_chkpwd</span><br><span class="line">/usr/share/cracklib/cracklib-small.pwd</span><br><span class="line">/usr/share/cracklib/pw_dict.pwd</span><br><span class="line">/usr/share/man/man1/pwd<span class="number">.1</span>.gz</span><br><span class="line">/usr/share/man/man1/pwdx<span class="number">.1</span>.gz</span><br><span class="line">/usr/share/man/man8/unix_chkpwd<span class="number">.8</span>.gz</span><br><span class="line">/usr/src/kernels/<span class="number">4.16</span><span class="number">.0</span>-<span class="number">1.</span>el7.elrepo.x86_64/include/config/hpwdt</span><br><span class="line">/usr/src/kernels/<span class="number">4.16</span><span class="number">.0</span>-<span class="number">1.</span>el7.elrepo.x86_64/include/config/hpwdt/nmi</span><br><span class="line">/usr/src/kernels/<span class="number">4.16</span><span class="number">.0</span>-<span class="number">1.</span>el7.elrepo.x86_64/include/config/hpwdt/nmi/decoding.h</span><br><span class="line"></span><br><span class="line"># 实例2： 搜索etc目录下所有以sh开头的文件</span><br><span class="line">[root@fq ~]# locate /etc/sh</span><br><span class="line">/etc/shadow</span><br><span class="line">/etc/shadow-</span><br><span class="line">/etc/shells</span><br><span class="line"></span><br><span class="line"># 实例3：搜索etc目录下，所有以m开头的文件</span><br><span class="line">[root@fq ~]# locate /etc/m</span><br><span class="line">/etc/machine-id</span><br><span class="line">/etc/magic</span><br><span class="line">/etc/mail.rc</span><br><span class="line">/etc/man_db.conf</span><br><span class="line">/etc/mke2fs.conf</span><br><span class="line">/etc/modprobe.d</span><br><span class="line">/etc/modules-load.d</span><br><span class="line">/etc/motd</span><br><span class="line">/etc/mtab</span><br><span class="line">/etc/my.cnf</span><br><span class="line">/etc/my.cnf.d</span><br><span class="line">/etc/modprobe.d/blacklist-floppy.conf</span><br><span class="line">/etc/modprobe.d/gce-blacklist.conf</span><br><span class="line">/etc/modprobe.d/tuned.conf</span><br><span class="line">/usr/lib64/mysql/mecab/etc/mecabrcmate-settings-daemon</span><br></pre></td></tr></table></figure>
+<h2 id="3-4-which-whereis"><a href="#3-4-which-whereis" class="headerlink" title="3.4 which/whereis"></a>3.4 which/whereis</h2><p><code>which</code>命令是从系统的<code>PATH</code>变量所定义的目录查找可执行文件的绝对路径</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# which passwd</span><br><span class="line">/bin/passwd</span><br></pre></td></tr></table></figure>
+<p><code>whereis</code>在<code>which</code>的基础上还能查找到<code>man</code>说明</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@fq ~]# whereis passwd</span><br><span class="line">passwd: /usr/bin/passwd /etc/passwd /usr/share/man/man1/passwd<span class="number">.1</span>.gz</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/" data-id="ckjr4ve0q008of0uk06i8c82e" data-title="linux-文件管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-星期月份英文缩写" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/" class="article-date">
+  <time class="dt-published" datetime="2018-10-25T10:56:51.000Z" itemprop="datePublished">2018-10-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E9%80%9A%E8%AF%86/">通识</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/">星期月份英文缩写</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="星期"><a href="#星期" class="headerlink" title="星期"></a>星期</h1><table>
+<thead>
+<tr>
+<th align="center">中文</th>
+<th align="center">英文</th>
+<th align="center">3字母缩写</th>
+<th align="center">3字母缩写</th>
+<th align="center">2字母缩写</th>
+<th align="center">2字母缩写</th>
+<th align="center">1字母缩写</th>
+<th align="center">1字母缩写</th>
+<th align="center">其他缩写</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">星期日</td>
+<td align="center">Sunday</td>
+<td align="center">SUN</td>
+<td align="center">Sun</td>
+<td align="center">SU</td>
+<td align="center">Su</td>
+<td align="center">S</td>
+<td align="center">S</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">星期一</td>
+<td align="center">Monday</td>
+<td align="center">MON</td>
+<td align="center">Mon</td>
+<td align="center">MO</td>
+<td align="center">Mo</td>
+<td align="center">M</td>
+<td align="center">M</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">星期二</td>
+<td align="center">Tuesday</td>
+<td align="center">TUE</td>
+<td align="center">Tue</td>
+<td align="center">TU</td>
+<td align="center">Tu</td>
+<td align="center">T</td>
+<td align="center">T</td>
+<td align="center">Tues</td>
+</tr>
+<tr>
+<td align="center">星期三</td>
+<td align="center">Wednesday</td>
+<td align="center">WED</td>
+<td align="center">Wed</td>
+<td align="center">WE</td>
+<td align="center">We</td>
+<td align="center">W</td>
+<td align="center">W</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">星期四</td>
+<td align="center">Thursday</td>
+<td align="center">THU</td>
+<td align="center">Thu</td>
+<td align="center">TH</td>
+<td align="center">Th</td>
+<td align="center">T</td>
+<td align="center">R</td>
+<td align="center">Thur / Thurs</td>
+</tr>
+<tr>
+<td align="center">星期五</td>
+<td align="center">Friday</td>
+<td align="center">FRI</td>
+<td align="center">Fri</td>
+<td align="center">FR</td>
+<td align="center">Fr</td>
+<td align="center">F</td>
+<td align="center">F</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">星期六</td>
+<td align="center">Saturday</td>
+<td align="center">SAT</td>
+<td align="center">Sat</td>
+<td align="center">SA</td>
+<td align="center">Sa</td>
+<td align="center">S</td>
+<td align="center">S</td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+        
+          <p class="article-more-link">
+            <a href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/" data-id="ckjr4vdzu004ef0uk6f2b4gs4" data-title="星期月份英文缩写" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%80%9A%E8%AF%86/" rel="tag">通识</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-linux-定时任务" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/25/linux-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/" class="article-date">
+  <time class="dt-published" datetime="2018-10-25T07:33:28.000Z" itemprop="datePublished">2018-10-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/25/linux-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/">linux-定时任务</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="1-执行一次任务-at"><a href="#1-执行一次任务-at" class="headerlink" title="1. 执行一次任务 at"></a>1. 执行一次任务 at</h1><h2 id="1-1-at权限"><a href="#1-1-at权限" class="headerlink" title="1.1 at权限"></a>1.1 at权限</h2><p>默认情况下所有用户都可以使用<code>at</code>命令来调度自己的命令，如果要禁止某用户使用该命令，可以将用户名加入到<code>/etc/at.deny</code></p>
+<h2 id="1-2-用法"><a href="#1-2-用法" class="headerlink" title="1.2 用法"></a>1.2 用法</h2><p>首先要启动<code>at</code>,使用<code>systemctl start atd</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# at now + 2 minutes</span><br><span class="line">at&gt; /usr/sbin/shutdown -h now    </span><br><span class="line">at&gt; &lt;EOT&gt;</span><br><span class="line">job <span class="number">3</span> at Thu Oct <span class="number">25</span> <span class="number">15</span>:<span class="number">43</span>:<span class="number">00</span> <span class="number">2018</span></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2018/10/25/linux-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/25/linux-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/" data-id="ckjr4vdyz001bf0uk7qk78m06" data-title="linux-定时任务" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-linux-账号管理" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/24/linux-%E8%B4%A6%E5%8F%B7%E7%AE%A1%E7%90%86/" class="article-date">
+  <time class="dt-published" datetime="2018-10-24T11:47:10.000Z" itemprop="datePublished">2018-10-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/24/linux-%E8%B4%A6%E5%8F%B7%E7%AE%A1%E7%90%86/">linux-账号管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="1-用户管理"><a href="#1-用户管理" class="headerlink" title="1. 用户管理"></a>1. 用户管理</h1><h2 id="1-1-新增用户-useradd"><a href="#1-1-新增用户-useradd" class="headerlink" title="1.1 新增用户 useradd"></a>1.1 新增用户 useradd</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd learn</span><br></pre></td></tr></table></figure>
+<p>这个命令用来创建用户名为<code>learn</code>的用户</p>
+<ul>
+<li>首先在<code>/etc/passwd</code>和<code>/etc/shadow</code>尾部追加一条记录，同时非陪给该用户一个UID</li>
+<li>然后回创建该用户的家目录,默认和用户名相同<code>/home/learn</code></li>
+<li>然后复制<code>/etc/skel</code>下的内容到用户的家目录下，如果我们自己创建文件到<code>/etc/skel</code>,那么在创建用户的时候也会把我们创建的文件复制到新的用户家目录下。</li>
+<li>最后新建一个与用户名相同的用户组</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2018/10/24/linux-%E8%B4%A6%E5%8F%B7%E7%AE%A1%E7%90%86/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/24/linux-%E8%B4%A6%E5%8F%B7%E7%AE%A1%E7%90%86/" data-id="ckjr4vdz0001ff0ukfec3gtqe" data-title="linux-账号管理" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-搭建内网穿透服务" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/15/%E6%90%AD%E5%BB%BA%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E6%9C%8D%E5%8A%A1/" class="article-date">
+  <time class="dt-published" datetime="2018-10-15T06:32:09.000Z" itemprop="datePublished">2018-10-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/15/%E6%90%AD%E5%BB%BA%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E6%9C%8D%E5%8A%A1/">搭建内网穿透服务</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="what"><a href="#what" class="headerlink" title="what?"></a>what?</h1><p>实现不同局域网内的主机之间通过互联网进行通信的技术叫内网穿透</p>
+<h1 id="when"><a href="#when" class="headerlink" title="when?"></a>when?</h1><p>家里电脑闲着也是闲着，不如搞点事情，对外提供服务怎么样。</p>
+<h1 id="how"><a href="#how" class="headerlink" title="how?"></a>how?</h1><p>内网穿透如何实现呢？答案有几个，分别是花生壳（收费），Nat123（收费），NATAPP（收费），ngrok（开源免费），答案显而易见，本着穷逼开源的精神当然选择ngrok。</p>
+<p>ok，开搞</p>
+<h1 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h1><ul>
+<li>一个需要对外暴露的内网http/https服务</li>
+<li>一个公网可以访问vps</li>
+<li>ngrok<h1 id="获取源码"><a href="#获取源码" class="headerlink" title="获取源码"></a>获取源码</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git clone https:<span class="comment">//github.com/inconshreveable/ngrok.git ngrok</span></span><br><span class="line"># 使用下面的地址，修复了无法访问的包地址</span><br><span class="line">git clone https:<span class="comment">//github.com/tutumcloud/ngrok.git ngrok</span></span><br><span class="line">cd ngrok</span><br></pre></td></tr></table></figure>
+<h1 id="生成并替换默认证书"><a href="#生成并替换默认证书" class="headerlink" title="生成并替换默认证书"></a>生成并替换默认证书</h1>生成并替换源码里默认的证书，注意域名修改为你自己的。（之后编译出来的服务端客户端会基于这个证书来加密通讯，保证了安全性）<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">NGROK_DOMAIN=<span class="string">&quot;ngrok.ornobug.top&quot;</span></span><br><span class="line"></span><br><span class="line">openssl genrsa -out base.key <span class="number">2048</span></span><br><span class="line"></span><br><span class="line">openssl req -<span class="keyword">new</span> -x509 -nodes -key base.key -days <span class="number">10000</span> -subj <span class="string">&quot;/CN=$NGROK_DOMAIN&quot;</span> -out base.pem</span><br><span class="line"></span><br><span class="line">openssl genrsa -out server.key <span class="number">2048</span></span><br><span class="line"></span><br><span class="line">openssl req -<span class="keyword">new</span> -key server.key -subj <span class="string">&quot;/CN=$NGROK_DOMAIN&quot;</span> -out server.csr</span><br><span class="line"></span><br><span class="line">openssl x509 -req -in server.csr -CA base.pem -CAkey base.key -CAcreateserial -days <span class="number">10000</span> -out server.crt</span><br><span class="line"></span><br><span class="line">cp base.pem assets/client/tls/ngrokroot.crt</span><br></pre></td></tr></table></figure>
+<h1 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make release-server release-client</span><br></pre></td></tr></table></figure>
+如果一切正常，ngrok/bin 目录下应该有 ngrok、ngrokd 两个Linux系统可执行文件。</li>
+</ul>
+<h1 id="生成windows客户端"><a href="#生成windows客户端" class="headerlink" title="生成windows客户端"></a>生成windows客户端</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GOOS=windows GOARCH=amd64 make release-client</span><br></pre></td></tr></table></figure>
+<p>如果一切正常，ngrok/bin/windows_amd64目录下应该有ngrok.exe可执行文件。</p>
+<h1 id="服务端启动"><a href="#服务端启动" class="headerlink" title="服务端启动"></a>服务端启动</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup ./bin/ngrokd -tlsKey=server.key -tlsCrt=server.crt -domain=<span class="string">&quot;ngrok.ornobug.top&quot;</span> -httpAddr=<span class="string">&quot;:8000&quot;</span> -httpsAddr=<span class="string">&quot;:8443&quot;</span> &gt;out.log <span class="number">2</span>&gt;&amp;<span class="number">1</span> &amp;</span><br></pre></td></tr></table></figure>
+<p>到这一步，<code>ngrok</code>服务已经跑起来了，可以通过屏幕上显示的日志查看更多信息。<code>httpAddr</code>、<code>httpsAddr</code> 分别是<code>ngrok</code>用来转发<code>http</code>、<code>https</code>服务的端口，可以随意指定。<code>ngrokd</code>还会开一个<code>4443</code>端口用来跟客户端通讯（可通过 <code>-tunnelAddr=&quot;:xxx&quot;</code> 指定），如果你配置了<code>iptables</code>规则，需要放行这三个端口上的<code>TCP</code>协议。</p>
+<p>在域名提供商上设置云解析，我这里为ornobug.top设置了A记录为*.ngrok的三级泛域名。随便访问一个网址比如<code>test.ngrok.ornobug.top:8000</code>得到返回值</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Tunnel test.ngrok.ornobug.top:<span class="number">8000</span> not found</span><br></pre></td></tr></table></figure>
+<h1 id="客户端配置文件"><a href="#客户端配置文件" class="headerlink" title="客户端配置文件"></a>客户端配置文件</h1><p>假如从上边获得编译后的客户端可执行文件放在/usr/local/ngrok下，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ngrok.cfg</span><br></pre></td></tr></table></figure>
+<p>写入如下内容</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">server_addr: <span class="string">&quot;ngrok.ornobug.top:4443&quot;</span></span><br><span class="line">trust_host_root_certs: <span class="keyword">false</span></span><br><span class="line">tunnels:</span><br><span class="line">    portainer:</span><br><span class="line">        subdomain: portainer</span><br><span class="line">        proto:</span><br><span class="line">            http: <span class="number">9000</span></span><br><span class="line">    nextcloud:</span><br><span class="line">        subdomain: nextcloud</span><br><span class="line">        proto:</span><br><span class="line">            http: <span class="number">40000</span></span><br><span class="line">    nginx:</span><br><span class="line">        subdomain: nginx</span><br><span class="line">        proto:</span><br><span class="line">            http: <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<p>几点说明:</p>
+<ul>
+<li>server_addr:ngrok服务地址</li>
+<li>tunnels: 表示能配置多个通道，下面的nextcloud和nginx都是通道名</li>
+<li>subdomain: 子域名，这里用nextcloud举例，最终的域名是nextcloud.ngrok.ornobug.top</li>
+<li>proto: 协议，可以是http/https</li>
+<li>http/https: 本地服务的端口</li>
+</ul>
+<h1 id="客户端连接"><a href="#客户端连接" class="headerlink" title="客户端连接"></a>客户端连接</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./ngrok -config=ngrok.cfg start nextcloud nginx</span><br></pre></td></tr></table></figure>
+<p>成功连接显示如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ngrok$&lt;<span class="number">2</span>&gt;                                                                       (Ctrl+C to q                                                                                            </span><br><span class="line">Tunnel Status                 online$&lt;<span class="number">2</span>&gt;                                                                                                                   </span><br><span class="line">Version                       <span class="number">1.7</span>/<span class="number">1.7</span>$&lt;<span class="number">2</span>&gt;                                                                                                                  </span><br><span class="line">Forwarding                    http:<span class="comment">//nginx.ngrok.ornobug.top:8000 -&gt; 127.0.0.1:80                                                                          </span></span><br><span class="line">Forwarding                    http:<span class="comment">//portainer.ngrok.ornobug.top:8000 -&gt; 127.0.0.1:9000                                                                    </span></span><br><span class="line">Forwarding                    http:<span class="comment">//nextcloud.ngrok.ornobug.top:8000 -&gt; 127.0.0.1:40000                                                                   </span></span><br><span class="line">Web Interface                 <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">4040</span>                                                                                                               </span><br><span class="line"># Conn                        0                                                                                                                            </span><br><span class="line">Avg Conn Time                 <span class="number">0.</span>00ms</span><br></pre></td></tr></table></figure>
+<p>此时访问在公网访问<code>http://nginx.ngrok.ornobug.top:8000</code>实际是我们本地的服务进行的响应，是不是很神奇呢？再配合vps上的nginx把8000端口隐藏就大功告成了！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/15/%E6%90%AD%E5%BB%BA%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E6%9C%8D%E5%8A%A1/" data-id="ckjr4vdzt0046f0ukgi753f55" data-title="搭建内网穿透服务" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-docker异常集锦" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/15/docker%E5%BC%82%E5%B8%B8%E9%9B%86%E9%94%A6/" class="article-date">
+  <time class="dt-published" datetime="2018-10-15T06:31:59.000Z" itemprop="datePublished">2018-10-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/15/docker%E5%BC%82%E5%B8%B8%E9%9B%86%E9%94%A6/">docker异常集锦</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="error-docker-runc-not-installed-on-system"><a href="#error-docker-runc-not-installed-on-system" class="headerlink" title="error: docker-runc not installed on system"></a>error: docker-runc not installed on system</h1><h2 id="解决方法1"><a href="#解决方法1" class="headerlink" title="解决方法1"></a>解决方法1</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/libexec/docker/</span><br><span class="line">sudo ln -s docker-runc-current docker-runc</span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2018/10/15/docker%E5%BC%82%E5%B8%B8%E9%9B%86%E9%94%A6/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/15/docker%E5%BC%82%E5%B8%B8%E9%9B%86%E9%94%A6/" data-id="ckjr4vdyq000ff0uk93l2he6c" data-title="docker异常集锦" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-搭建自己的私人云盘" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/10/14/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%A7%81%E4%BA%BA%E4%BA%91%E7%9B%98/" class="article-date">
+  <time class="dt-published" datetime="2018-10-14T06:31:49.000Z" itemprop="datePublished">2018-10-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/linux/">linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/10/14/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%A7%81%E4%BA%BA%E4%BA%91%E7%9B%98/">搭建自己的私人云盘</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h1><ul>
+<li>Centos</li>
+<li>Docker</li>
+<li>NextCloud<h1 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h1>这里使用Vbox安装的CentOS-7-x86_64-Minimal-1804.iso，yum源全部原始文件，vbox虚拟机配的固定局域网<code>ip192.168.0.200</code><h1 id="安装docker"><a href="#安装docker" class="headerlink" title="安装docker"></a>安装docker</h1></li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2018/10/14/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%A7%81%E4%BA%BA%E4%BA%91%E7%9B%98/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/10/14/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%A7%81%E4%BA%BA%E4%BA%91%E7%9B%98/" data-id="ckjr4vdzu004bf0uk0mo1csx4" data-title="搭建自己的私人云盘" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
 
 </section>
         
           <aside id="sidebar">
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/activemq/">activemq</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/hadoop/">hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/js/">js</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/jvm/">jvm</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/linux/">linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/maven/">maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/mysql/">mysql</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/spring/">spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/zookeeper/">zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">多线程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%97%A5%E5%BF%97/">日志</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%BD%AE%E5%AD%90/">轮子</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%80%9A%E8%AF%86/">通识</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CountDownLatch/" rel="tag">CountDownLatch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CyclicBarrier/" rel="tag">CyclicBarrier</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantLock/" rel="tag">ReentrantLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantReadWriteLock/" rel="tag">ReentrantReadWriteLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ThreadLocal/" rel="tag">ThreadLocal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/activemq/" rel="tag">activemq</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cas%E6%93%8D%E4%BD%9C/" rel="tag">cas操作</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cron/" rel="tag">cron</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fork-join%E6%A1%86%E6%9E%B6/" rel="tag">fork/join框架</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/freemark/" rel="tag">freemark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hadoop/" rel="tag">hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm/" rel="tag">jvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" rel="tag">jvm，垃圾回收</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/" rel="tag">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/log4j/" rel="tag">log4j</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/" rel="tag">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/protobuf/" rel="tag">protobuf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/quartz/" rel="tag">quartz</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/" rel="tag">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/servlet3/" rel="tag">servlet3</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring/" rel="tag">spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/springboot/" rel="tag">springboot</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/" rel="tag">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web-xml/" rel="tag">web.xml</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" rel="tag">主从复制</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" rel="tag">单例模式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">基础线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag">多线程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" rel="tag">字符串</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="tag">布隆过滤器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" rel="tag">并发集合类</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2/" rel="tag">搜索</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">数字格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A0%E9%94%81/" rel="tag">无锁</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">日期格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%A0%88/" rel="tag">栈</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B3%9B%E5%9E%8B/" rel="tag">泛型</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" rel="tag">线程阻塞工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BD%AE%E5%AD%90/" rel="tag">轮子</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%9A%E8%AF%86/" rel="tag">通识</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" rel="tag">锁优化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%9F%E5%88%97/" rel="tag">队列</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CountDownLatch/" style="font-size: 10px;">CountDownLatch</a> <a href="/tags/CyclicBarrier/" style="font-size: 10px;">CyclicBarrier</a> <a href="/tags/ReentrantLock/" style="font-size: 10px;">ReentrantLock</a> <a href="/tags/ReentrantReadWriteLock/" style="font-size: 10px;">ReentrantReadWriteLock</a> <a href="/tags/ThreadLocal/" style="font-size: 10px;">ThreadLocal</a> <a href="/tags/activemq/" style="font-size: 10px;">activemq</a> <a href="/tags/cas%E6%93%8D%E4%BD%9C/" style="font-size: 10px;">cas操作</a> <a href="/tags/cron/" style="font-size: 10px;">cron</a> <a href="/tags/fork-join%E6%A1%86%E6%9E%B6/" style="font-size: 10px;">fork/join框架</a> <a href="/tags/freemark/" style="font-size: 10px;">freemark</a> <a href="/tags/hadoop/" style="font-size: 12px;">hadoop</a> <a href="/tags/js/" style="font-size: 14px;">js</a> <a href="/tags/jvm/" style="font-size: 10px;">jvm</a> <a href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" style="font-size: 12px;">jvm，垃圾回收</a> <a href="/tags/linux/" style="font-size: 16px;">linux</a> <a href="/tags/log4j/" style="font-size: 10px;">log4j</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/protobuf/" style="font-size: 10px;">protobuf</a> <a href="/tags/quartz/" style="font-size: 12px;">quartz</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/servlet3/" style="font-size: 10px;">servlet3</a> <a href="/tags/spring/" style="font-size: 12px;">spring</a> <a href="/tags/springboot/" style="font-size: 10px;">springboot</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/web-xml/" style="font-size: 10px;">web.xml</a> <a href="/tags/zookeeper/" style="font-size: 20px;">zookeeper</a> <a href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" style="font-size: 10px;">主从复制</a> <a href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" style="font-size: 10px;">单例模式</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">基础线程池</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 18px;">多线程</a> <a href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" style="font-size: 10px;">字符串</a> <a href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" style="font-size: 10px;">布隆过滤器</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" style="font-size: 10px;">并发集合类</a> <a href="/tags/%E6%90%9C%E7%B4%A2/" style="font-size: 10px;">搜索</a> <a href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 12px;">数字格式化</a> <a href="/tags/%E6%97%A0%E9%94%81/" style="font-size: 10px;">无锁</a> <a href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 10px;">日期格式化</a> <a href="/tags/%E6%A0%88/" style="font-size: 10px;">栈</a> <a href="/tags/%E6%B3%9B%E5%9E%8B/" style="font-size: 10px;">泛型</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">线程池</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">线程阻塞工具</a> <a href="/tags/%E8%BD%AE%E5%AD%90/" style="font-size: 10px;">轮子</a> <a href="/tags/%E9%80%9A%E8%AF%86/" style="font-size: 10px;">通识</a> <a href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" style="font-size: 12px;">锁优化</a> <a href="/tags/%E9%98%9F%E5%88%97/" style="font-size: 10px;">队列</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/10/">October 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/09/">September 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li></ul>
     </div>
   </div>
 
@@ -150,6 +995,22 @@
         
           <li>
             <a href="/2021/01/10/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">federation模式的hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/">linux-文件管理</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/">星期月份英文缩写</a>
           </li>
         
       </ul>

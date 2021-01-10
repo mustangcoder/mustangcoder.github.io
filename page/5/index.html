@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Hexo">
+<meta property="og:url" content="http://example.com/page/5/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-布隆过滤器" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/06/17/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" class="article-date">
+  <time class="dt-published" datetime="2018-06-17T08:57:11.000Z" itemprop="datePublished">2018-06-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/06/17/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">布隆过滤器</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>初始化一个很大的bit数组，然后通过多个hash函数（h1,h2,,,hn），将元素经过h1函数后映射的位置标为1，其他hash函数也如是。<br>这样就得到了一个元素在bit数组中的几个为1的bit位。其余元素也如是。<br>要检查一个元素是否在集合中的时候，就把这n个hash函数往元素上一套，映射到了n个bit位，如果都为1说明该元素在集合中存在，不都为1不存在。<br>但会有一些不在集合中的元素的值经过k次哈希后，也全部为1，但它确实不是集合里的值，这种概率是存在的，但是是可控的。</p>
+<h3 id="自己的实现"><a href="#自己的实现" class="headerlink" title="自己的实现"></a>自己的实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line">import java.util.BitSet;</span><br><span class="line"></span><br><span class="line">public class BloomFilter &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F;二进制向量的位数，相当于能存储1000万条url左右，误报率为千万分之一</span><br><span class="line">    private static final int BIT_SIZE &#x3D; 2 &lt;&lt; 28;</span><br><span class="line">    &#x2F;&#x2F;用于生成信息指纹的8个随机数，最好选取质数</span><br><span class="line">    private static final int[] seeds &#x3D; new int[]&#123;3, 5, 7, 11, 13, 31, 37, 61&#125;;</span><br><span class="line"></span><br><span class="line">    private BitSet bits &#x3D; new BitSet(BIT_SIZE);</span><br><span class="line">    &#x2F;&#x2F;用于存储8个随机哈希值对象</span><br><span class="line">    private Hash[] func &#x3D; new Hash[seeds.length];</span><br><span class="line"></span><br><span class="line">    public BloomFilter() &#123;</span><br><span class="line">        for (int i &#x3D; 0; i &lt; seeds.length; i++) &#123;</span><br><span class="line">            func[i] &#x3D; new Hash(BIT_SIZE, seeds[i]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 像过滤器中添加字符串</span><br><span class="line">     *&#x2F;</span><br><span class="line">    public void addValue(String value) &#123;</span><br><span class="line">        &#x2F;&#x2F;将字符串value哈希为8个或多个整数，然后在这些整数的bit上变为1</span><br><span class="line">        if (value !&#x3D; null) &#123;</span><br><span class="line">            for (Hash f : func)</span><br><span class="line">                bits.set(f.hash(value), true);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 判断字符串是否包含在布隆过滤器中</span><br><span class="line">     *&#x2F;</span><br><span class="line">    public boolean contains(String value) &#123;</span><br><span class="line">        if (value &#x3D;&#x3D; null)</span><br><span class="line">            return false;</span><br><span class="line"></span><br><span class="line">        boolean ret &#x3D; true;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F;将要比较的字符串重新以上述方法计算hash值，再与布隆过滤器比对</span><br><span class="line">        for (Hash f : func)</span><br><span class="line">            ret &#x3D; ret &amp;&amp; bits.get(f.hash(value));</span><br><span class="line">        return ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 随机哈希值对象</span><br><span class="line">     *&#x2F;</span><br><span class="line"></span><br><span class="line">    public static class Hash &#123;</span><br><span class="line">        private int size;&#x2F;&#x2F;二进制向量数组大小</span><br><span class="line">        private int seed;&#x2F;&#x2F;随机数种子</span><br><span class="line"></span><br><span class="line">        public Hash(int cap, int seed) &#123;</span><br><span class="line">            this.size &#x3D; cap;</span><br><span class="line">            this.seed &#x3D; seed;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        &#x2F;**</span><br><span class="line">         * 计算哈希值(也可以选用别的恰当的哈希函数)</span><br><span class="line">         *&#x2F;</span><br><span class="line">        public int hash(String value) &#123;</span><br><span class="line">            int result &#x3D; 0;</span><br><span class="line">            int len &#x3D; value.length();</span><br><span class="line">            for (int i &#x3D; 0; i &lt; len; i++) &#123;</span><br><span class="line">                result &#x3D; seed * result + value.charAt(i);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            return (size - 1) &amp; result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line"></span><br><span class="line">        BloomFilter b &#x3D; new BloomFilter();</span><br><span class="line"></span><br><span class="line">        for (int i &#x3D; 0; i &lt; 100000000; i++) &#123;</span><br><span class="line">            b.addValue(&quot;www.baidu.com&quot; + i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (int i &#x3D; 0; i &lt; 10000000; i++) &#123;</span><br><span class="line">            long time1 &#x3D; System.nanoTime();</span><br><span class="line">            System.out.println(b.contains(&quot;www.baidu.com&quot; + i));</span><br><span class="line">            long time2 &#x3D; System.nanoTime();</span><br><span class="line">            System.out.println(&quot;布隆过滤器耗时&quot; + (time2 - time1) + &quot;纳秒&quot;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="google的实现"><a href="#google的实现" class="headerlink" title="google的实现"></a>google的实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;com.google.guava&lt;&#x2F;groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;guava&lt;&#x2F;artifactId&gt;</span><br><span class="line">	&lt;version&gt;25.1-jre&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">import com.google.common.hash.BloomFilter;</span><br><span class="line">import com.google.common.hash.Funnels;</span><br><span class="line"></span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">public class Test &#123;</span><br><span class="line">    private static int size &#x3D; 1000000;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; 允许的错误概率为0.0001</span><br><span class="line">    private static BloomFilter&lt;Integer&gt; bloomFilter &#x3D; BloomFilter.create(Funnels.integerFunnel(), size, 0.0001);</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        for (int i &#x3D; 0; i &lt; size; i++) &#123;</span><br><span class="line">            bloomFilter.put(i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (int i &#x3D; 0; i &lt; size; i++) &#123;</span><br><span class="line">            if (!bloomFilter.mightContain(i)) &#123;</span><br><span class="line">                System.out.println(&quot;漏掉了&quot;+i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        List&lt;Integer&gt; list &#x3D; new ArrayList&lt;Integer&gt;(1000);</span><br><span class="line">        for (int i &#x3D; size + 10000; i &lt; size + 20000; i++) &#123;</span><br><span class="line">            if (bloomFilter.mightContain(i)) &#123;</span><br><span class="line">                list.add(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(&quot;误伤的数量：&quot; + list.size());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/06/17/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" data-id="ckjr4vdzs0043f0uk9b4b34v9" data-title="布隆过滤器" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="tag">布隆过滤器</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-两个队列实现的栈" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/06/17/%E4%B8%A4%E4%B8%AA%E9%98%9F%E5%88%97%E5%AE%9E%E7%8E%B0%E7%9A%84%E6%A0%88/" class="article-date">
+  <time class="dt-published" datetime="2018-06-17T07:34:37.000Z" itemprop="datePublished">2018-06-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/06/17/%E4%B8%A4%E4%B8%AA%E9%98%9F%E5%88%97%E5%AE%9E%E7%8E%B0%E7%9A%84%E6%A0%88/">两个队列实现的栈</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Q:队列先进先出，栈先进后出，用两个队列来实现一个栈</p>
+<p>A:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">import java.util.Queue;</span><br><span class="line">import java.util.concurrent.LinkedBlockingDeque;</span><br><span class="line"></span><br><span class="line">public class StockDemo&lt;T&gt; &#123;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; 入栈操作的队列</span><br><span class="line">    private Queue&lt;T&gt; q1 &#x3D; new LinkedBlockingDeque&lt;T&gt;();</span><br><span class="line">	&#x2F;&#x2F; 出栈操作的队列</span><br><span class="line">    private Queue&lt;T&gt; q2 &#x3D; new LinkedBlockingDeque&lt;T&gt;();</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; 入栈操作就是简单的往q1放</span><br><span class="line">    public void push(T t) &#123;</span><br><span class="line">        q1.add(t);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public boolean empty() &#123;</span><br><span class="line">        return q1.isEmpty();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; 出栈操作</span><br><span class="line">    public T pop() &#123;</span><br><span class="line">        if (q1.size() &#x3D;&#x3D; 0) &#123;</span><br><span class="line">            return null;</span><br><span class="line">        &#125; else if (q1.size() &#x3D;&#x3D; 1) &#123;</span><br><span class="line">		    &#x2F;&#x2F; 入栈队列中只有一个元素则直接返回</span><br><span class="line">            return q1.poll();</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">		    &#x2F;&#x2F; 多于两个就往q2队列放，队列先进先出 传递顺序为A-B-C则存放顺序也为A-B-C则存放顺序也为A-B-C</span><br><span class="line">			&#x2F;&#x2F; 由于模拟栈的操作，q1队列的最后一个元素不放进q2,直接返回看上去就像栈顶的元素先弹出</span><br><span class="line">            while (q1.size() &gt; 1) &#123;</span><br><span class="line">                q2.add(q1.poll());</span><br><span class="line">            &#125;</span><br><span class="line">            T result &#x3D; q1.poll();</span><br><span class="line">			&#x2F;&#x2F; 然后把q2里的元素再放回到q1等待下一次出栈</span><br><span class="line">            while (!q2.isEmpty()) &#123;</span><br><span class="line">                q1.add(q2.poll());</span><br><span class="line">            &#125;</span><br><span class="line">            return result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        StockDemo&lt;Integer&gt; stockDemo &#x3D; new StockDemo&lt;&gt;();</span><br><span class="line">        stockDemo.push(1);</span><br><span class="line">        stockDemo.push(2);</span><br><span class="line">        stockDemo.push(3);</span><br><span class="line">        System.out.println(stockDemo.pop());</span><br><span class="line">        stockDemo.push(4);</span><br><span class="line">        System.out.println(stockDemo.pop());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/06/17/%E4%B8%A4%E4%B8%AA%E9%98%9F%E5%88%97%E5%AE%9E%E7%8E%B0%E7%9A%84%E6%A0%88/" data-id="ckjr4vdzq003sf0ukf60c7n69" data-title="两个队列实现的栈" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A0%88/" rel="tag">栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%9F%E5%88%97/" rel="tag">队列</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-字符串逆序的三种方法" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/06/17/%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%80%86%E5%BA%8F%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95/" class="article-date">
+  <time class="dt-published" datetime="2018-06-17T05:58:08.000Z" itemprop="datePublished">2018-06-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/06/17/%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%80%86%E5%BA%8F%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95/">字符串逆序的三种方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <ol>
+<li>递归法<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">private static String reserveStr1(String string)&#123;</span><br><span class="line">	if (string.length()&lt;&#x3D;1)&#123;</span><br><span class="line">		return string;</span><br><span class="line">	&#125;</span><br><span class="line">	return reserveStr1(string.substring(1)) + string.charAt(0);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">----1234</span><br><span class="line">--------234</span><br><span class="line">------------34</span><br><span class="line">----------------4(此时返回)，然后34的charAt(0)是3，得到43，以后的返回也如是</span><br><span class="line">------------43</span><br><span class="line">--------432</span><br><span class="line">----4321</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+<li>逆向遍历法<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">private static String reserveStr2(String string)&#123;</span><br><span class="line">	char[] charArr &#x3D; string.toCharArray();</span><br><span class="line">	int length &#x3D; charArr.length;</span><br><span class="line">	String result &#x3D; &quot;&quot;;</span><br><span class="line">	for (int i &#x3D; length-1;i&gt;&#x3D;0;i--)&#123;</span><br><span class="line">		result +&#x3D; charArr[i];</span><br><span class="line">	&#125;</span><br><span class="line">	return result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>下标交换法<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">private static String reserveStr3(String string)&#123;</span><br><span class="line"></span><br><span class="line">	char[] charArr &#x3D; string.toCharArray();</span><br><span class="line">	int length &#x3D; charArr.length;</span><br><span class="line">	if (length % 2 &#x3D;&#x3D; 0)&#123;</span><br><span class="line">		int middle &#x3D; length &#x2F; 2 - 1;</span><br><span class="line">		for (int i &#x3D; 0;i&lt;&#x3D;middle;i++)&#123;</span><br><span class="line">			char temp &#x3D; charArr[i];</span><br><span class="line">			charArr[i] &#x3D; charArr[(length-1)-i];</span><br><span class="line">			charArr[(length-1)-i] &#x3D; temp;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;else &#123;</span><br><span class="line">		int middle &#x3D; length &#x2F; 2;</span><br><span class="line">		for (int i &#x3D; 0;i&lt;middle;i++)&#123;</span><br><span class="line">			char temp &#x3D; charArr[i];</span><br><span class="line">			charArr[i] &#x3D; charArr[(length-1)-i];</span><br><span class="line">			charArr[(length-1)-i] &#x3D; temp;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	return new String( charArr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>时间测试<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">long startTime &#x3D; System.currentTimeMillis();</span><br><span class="line">for (int i &#x3D; 0 ;i&lt;10000000;i++)&#123;</span><br><span class="line">	reserveStr1(&quot;1234&quot;);</span><br><span class="line">&#125;</span><br><span class="line">long tempTime1 &#x3D; System.currentTimeMillis();</span><br><span class="line">System.out.println(tempTime1-startTime);</span><br><span class="line">for (int i &#x3D; 0 ;i&lt;10000000;i++)&#123;</span><br><span class="line">	reserveStr2(&quot;1234&quot;);</span><br><span class="line">&#125;</span><br><span class="line">long tempTime2 &#x3D; System.currentTimeMillis();</span><br><span class="line">System.out.println(tempTime2-tempTime1);</span><br><span class="line">for (int i &#x3D; 0 ;i&lt;10000000;i++)&#123;</span><br><span class="line">	reserveStr3(&quot;1234&quot;);</span><br><span class="line">&#125;</span><br><span class="line">long tempTime3 &#x3D; System.currentTimeMillis();</span><br><span class="line">System.out.println(tempTime3-tempTime1);</span><br></pre></td></tr></table></figure>
+输出分别为<br>1328<br>421<br>531</li>
+</ol>
+<p>*结论:*直接逆序简单粗暴又快速，递归生成很多对象而且递归深度到10000左右就会栈溢出，所以太长的字符串就不考虑递归了</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/06/17/%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%80%86%E5%BA%8F%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95/" data-id="ckjr4vdzr0040f0ukc9c7e2y9" data-title="字符串逆序的三种方法" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" rel="tag">字符串</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-sql查询优化" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/sql%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T09:16:15.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/mysql/">mysql</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/sql%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/">sql查询优化</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="主要建议"><a href="#主要建议" class="headerlink" title="主要建议"></a>主要建议</h2><ul>
+<li>对查询进行优化，应尽量避免全表扫描，首先应考虑在 where 及 order by 涉及的列上建立索引。</li>
+<li>应尽量避免在 where 子句中对字段进行 null 值判断，否则将导致引擎放弃使用索引而进行全表扫描，<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num is <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+  可以在 num 上设置默认值 0,确保表中 num 列没有 null 值，然后这样查询：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num=<span class="number">0</span>;</span><br></pre></td></tr></table></figure></li>
+<li>应尽量避免在 where 子句中使用!=或&lt;&gt;操作符，否则将引擎放弃使用索引而进行全表扫描。</li>
+<li>应尽量避免在 where 子句中使用 or 来连接条件，否则将导致引擎放弃使用索引而进行全表扫描，<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num=<span class="number">10</span> or num=<span class="number">20</span>;</span><br></pre></td></tr></table></figure>
+  可以这样查询：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num=<span class="number">10</span> union all select id from t where num=<span class="number">20</span>;</span><br></pre></td></tr></table></figure></li>
+<li>in 和 not in 也要慎用，否则会导致全表扫描，如：<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">select id from t where num <span class="title">in</span><span class="params">(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+  对于连续的数值，能用 between 就不要用 in 了：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num between <span class="number">1</span> and <span class="number">3</span>;</span><br></pre></td></tr></table></figure></li>
+<li>下面的查询也将导致全表扫描：<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where name like <span class="string">&#x27;%c%&#x27;</span>;</span><br></pre></td></tr></table></figure>
+  若要提高效率，可以考虑全文检索。</li>
+<li>如果在 where 子句中使用参数，也会导致全表扫描。因为 SQL 只有在运行时才会解析局部变量，但优 化程序不能将访问计划的选择推迟到运行时;它必须在编译时进行选择。然 而，如果在编译时建立访问计 划，变量的值还是未知的，因而无法作为索引选择的输入项。如下面语句将进行全表扫描：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num&#x3D;@num ;</span><br></pre></td></tr></table></figure>
+  可以改为强制查询使用索引：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">select id from t <span class="title">with</span><span class="params">(index(索引名)</span>) where num</span>=<span class="meta">@num</span> ;</span><br></pre></td></tr></table></figure></li>
+<li>应尽量避免在 where 子句中对字段进行表达式操作， 这将导致引擎放弃使用索引而进行全表扫描。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num/<span class="number">2</span>=<span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+  可以这样查询：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where num=<span class="number">100</span>*<span class="number">2</span>;</span><br></pre></td></tr></table></figure></li>
+<li>应尽量避免在 where 子句中对字段进行函数操作，这将导致引擎放弃使用索引而进行全表扫描。如：<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">select id from t where <span class="title">substring</span><span class="params">(name,<span class="number">1</span>,<span class="number">3</span>)</span></span>=<span class="string">&#x27;abc&#x27;</span>;</span><br><span class="line">#name 以 abc 开头的 id</span><br></pre></td></tr></table></figure>
+  应改为：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select id from t where name like <span class="string">&#x27;abc%&#x27;</span>;</span><br></pre></td></tr></table></figure></li>
+<li>不要在 where 子句中的“=”左边进行函数、算术运算或其他表达式运算，否则系统将可能无法正确使用 索引。</li>
+<li>在使用索引字段作为条件时，如果该索引是复合索引，那么必须使用到该索引中的第一个字段作为条件 时才能保证系统使用该索引， 否则该索引将不会 被使用， 并且应尽可能的让字段顺序与索引顺序相一致。</li>
+<li>不要写一些没有意义的查询，如需要生成一个空表结构：<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select col1,col2 into #t from t where 1=0;</span><br></pre></td></tr></table></figure>
+  这类代码不会返回任何结果集，但是会消耗系统资源的，应改成这样：  <figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create table #t(…);</span><br></pre></td></tr></table></figure></li>
+<li>很多时候用 exists 代替 in 是一个好的选择：<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">select num from a where num <span class="title">in</span><span class="params">(select num from b)</span></span>;</span><br></pre></td></tr></table></figure>
+  用下面的语句替换：  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">select num from a where <span class="title">exists</span><span class="params">(select <span class="number">1</span> from b where num=a.num)</span></span>;</span><br></pre></td></tr></table></figure></li>
+<li>并不是所有索引对查询都有效，SQL 是根据表中数据来进行查询优化的，当索引列有大量数据重复时， SQL 查询可能不会去利用索引，如一表中有字段 <strong>*,male、female 几乎各一半，那么即使在 *</strong> 上建 了索引也对查询效率起不了作用。</li>
+<li>索引并不是越多越好，索引固然可以提高相应的 select 的效率，但同时也降低了 insert 及 update 的效率，因为 insert 或 update 时有可能会重建索引，所以怎样建索引需要慎重考虑，视具体情况而定。一个表的索引数最好不要超过 6 个，若太多则应考虑一些不常使用到的列上建的索引是否有必要。</li>
+<li>应尽可能的避免更新 clustered 索引数据列， 因为 clustered 索引数据列的顺序就是表记录的物理存储顺序，一旦该列值改变将导致整个表记录的顺序的调整，会耗费相当大的资源。若应用系统需要频繁更新 clustered 索引数据列，那么需要考虑是否应将该索引建为 clustered 索引。</li>
+<li>尽量使用数字型字段，若只含数值信息的字段尽量不要设计为字符型，这会降低查询和连接的性能，并 会增加存储开销。这是因为引擎在处理查询和连接时会逐个比较字符串中每一个字符，而对于数字型而言 只需要比较一次就够了。</li>
+<li>尽可能的使用 varchar/nvarchar 代替 char/nchar , 因为首先变长字段存储空间小， 可以节省存储空间， 其次对于查询来说，在一个相对较小的字段内搜索效率显然要高些。</li>
+<li>任何地方都不要使用 select * from t ,用具体的字段列表代替“*”,不要返回用不到的任何字段。</li>
+<li>尽量使用表变量来代替临时表。如果表变量包含大量数据，请注意索引非常有限(只有主键索引)。</li>
+<li>避免频繁创建和删除临时表，以减少系统表资源的消耗。</li>
+<li>临时表并不是不可使用，适当地使用它们可以使某些例程更有效，例如，当需要重复引用大型表或常用 表中的某个数据集时。但是，对于一次性事件， 最好使用导出表。</li>
+<li>在新建临时表时，如果一次性插入数据量很大，那么可以使用 select into 代替 create table,避免造成大量 log ,以提高速度;如果数据量不大，为了缓和系统表的资源，应先 create table,然后 insert.</li>
+<li>如果使用到了临时表， 在存储过程的最后务必将所有的临时表显式删除， 先 truncate table ,然后 drop table ,这样可以避免系统表的较长时间锁定。</li>
+<li>尽量避免使用游标，因为游标的效率较差，如果游标操作的数据超过 1 万行，那么就应该考虑改写。</li>
+<li>使用基于游标的方法或临时表方法之前，应先寻找基于集的解决方案来解决问题，基于集的方法通常更 有效。</li>
+<li>与临时表一样，游标并不是不可使用。对小型数据集使用 FAST_FORWARD 游标通常要优于其他逐行处理方法，尤其是在必须引用几个表才能获得所需的数据时。在结果集中包括“合计”的例程通常要比使用游标执行的速度快。如果开发时间允许，基于游标的方法和基于集的方法都可以尝试一下，看哪一种方法的效果更好。</li>
+<li>在所有的存储过程和触发器的开始处设置 SET NOCOUNT ON ,在结束时设置 SET NOCOUNT OFF .无需在执行存储过程和触发器的每个语句后向客户端发送 DONE_IN_PROC 消息。</li>
+<li>尽量避免大事务操作，提高系统并发能力。 sql 优化方法使用索引来更快地遍历表。 缺省情况下建立的索引是非群集索引，但有时它并不是最佳的。在非群集索引下，数据在物理上随机存放在数据页上。合理的索引设计要建立在对各种查询的分析和预测上。一般来说：<ul>
+<li>有大量重复值、且经常有范围查询( &gt; ,&lt; ,&gt; =,&lt; =)和 order by、group by 发生的列，可考虑建立集群索引;</li>
+<li>经常同时存取多列，且每列都含有重复值可考虑建立组合索引;</li>
+<li>组合索引要尽量使关键查询形成索引覆盖，其前导列一定是使用最频繁的列。索引虽有助于提高性能但 不是索引越多越好，恰好相反过多的索引会导致系统低效。用户在表中每加进一个索引，维护索引集合就 要做相应的更新工作。</li>
+</ul>
+</li>
+<li>定期分析表和检查表。<br>分析表的语法：ANALYZE [LOCAL | NO_WRITE_TO_BINLOG] TABLE tb1_name[, tbl_name]…<br>以上语句用于分析和存储表的关键字分布，分析的结果将可以使得系统得到准确的统计信息，使得SQL能够生成正确的执行计划。如果用户感觉实际执行计划并不是预期的执行计划，执行一次分析表可能会解决问题。在分析期间，使用一个读取锁定对表进行锁定。这对于MyISAM，DBD和InnoDB表有作用。<br>例如分析一个数据表：analyze table table_name<br>检查表的语法：CHECK TABLE tb1_name[,tbl_name]…[option]…option = {QUICK | FAST | MEDIUM | EXTENDED | CHANGED}<br>检查表的作用是检查一个或多个表是否有错误，CHECK TABLE 对MyISAM 和 InnoDB表有作用，对于MyISAM表，关键字统计数据被更新<br>CHECK TABLE 也可以检查视图是否有错误，比如在视图定义中被引用的表不存在。</li>
+<li>定期优化表。<br>优化表的语法：OPTIMIZE [LOCAL | NO_WRITE_TO_BINLOG] TABLE tb1_name [,tbl_name]…<br>如果删除了表的一大部分，或者如果已经对含有可变长度行的表(含有 VARCHAR、BLOB或TEXT列的表)进行更多更改，则应使用OPTIMIZE TABLE命令来进行表优化。这个命令可以将表中的空间碎片进行合并，并且可以消除由于删除或者更新造成的空间浪费，但OPTIMIZE TABLE 命令只对MyISAM、 BDB 和InnoDB表起作用。<br>例如： optimize table table_name<br>注意： analyze、check、optimize执行期间将对表进行锁定，因此一定注意要在MySQL数据库不繁忙的时候执行相关的操作。<h2 id="补充："><a href="#补充：" class="headerlink" title="补充："></a>补充：</h2></li>
+<li>在海量查询时尽量少用格式转换。</li>
+<li>ORDER BY 和 GROPU BY:使用 ORDER BY 和 GROUP BY 短语，任何一种索引都有助于 SELECT 的性能提高。</li>
+<li>任何对列的操作都将导致表扫描，它包括数据库教程函数、计算表达式等等，查询时要尽可能将操作移 至等号右边。</li>
+<li>IN、OR 子句常会使用工作表，使索引失效。如果不产生大量重复值，可以考虑把子句拆开。拆开的子 句中应该包含索引。</li>
+<li>只要能满足你的需求，应尽可能使用更小的数据类型：例如使用 MEDIUMINT 代替 INT</li>
+<li>尽量把所有的列设置为 NOT NULL,如果你要保存 NULL,手动去设置它，而不是把它设为默认值。</li>
+<li>尽量少用 VARCHAR、TEXT、BLOB 类型</li>
+<li>如果你的数据只有你所知的少量的几个。最好使用 ENUM 类型</li>
+<li>正如 graymice 所讲的那样，建立索引。</li>
+<li>合理用运分表与分区表提高数据存放和提取速度。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/sql%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/" data-id="ckjr4vdz60020f0ukdpin5apv" data-title="sql查询优化" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-单例模式几种形式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%87%A0%E7%A7%8D%E5%BD%A2%E5%BC%8F/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T09:11:23.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%87%A0%E7%A7%8D%E5%BD%A2%E5%BC%8F/">单例模式几种方式</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="立即加载-饿汉模式"><a href="#立即加载-饿汉模式" class="headerlink" title="立即加载/饿汉模式"></a>立即加载/饿汉模式</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">new</span> StaticSingleton();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="延迟加载-懒汉模式"><a href="#延迟加载-懒汉模式" class="headerlink" title="延迟加载/懒汉模式"></a>延迟加载/懒汉模式</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">	    <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">			instance = <span class="keyword">new</span> StaticSingleton();</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>懒汉能够按需加载，但是会带来线程安全问题导致生成多个单例对象，可以考虑加同步解决</p>
+<h3 id="延迟加载-懒汉模式同步模式"><a href="#延迟加载-懒汉模式同步模式" class="headerlink" title="延迟加载/懒汉模式同步模式"></a>延迟加载/懒汉模式同步模式</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">	    <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">			instance = <span class="keyword">new</span> StaticSingleton();</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这样会导致效率低下，所以还可以改进</p>
+<h3 id="DCL双检查锁机制"><a href="#DCL双检查锁机制" class="headerlink" title="DCL双检查锁机制"></a>DCL双检查锁机制</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> StaticSingleton instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">	    <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">			<span class="keyword">synchronized</span>(StaticSingleton.class)&#123;</span><br><span class="line">				<span class="keyword">if</span>(<span class="keyword">null</span> == instance)&#123;</span><br><span class="line">					instance = <span class="keyword">new</span> StaticSingleton();</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="静态内部类"><a href="#静态内部类" class="headerlink" title="静态内部类"></a>静态内部类</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">SingletonHolder</span></span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">new</span> StaticSingyon();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> SingletonHolder.instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>getInstance()方法没有使用锁，高并发时性能优良，只有在getInstance()第一次被调用时，单例才会被创建，这种方法巧妙的使用内部类和类的初始化方式。<em>静态内部类和非静态内部类一样，都是在被调用时才会被加载。</em>内部类被声明为私有，外部不能直接调用。</p>
+<h3 id="序列化反序列化单例"><a href="#序列化反序列化单例" class="headerlink" title="序列化反序列化单例"></a>序列化反序列化单例</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">3731566185130077643L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">SingletonHolder</span></span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">new</span> StaticSingyon();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> SingletonHolder.instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 该方法保证反序列化得到单例对象</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Object <span class="title">readResolve</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> SingleDemoHandler.instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="静态代码块实现单例"><a href="#静态代码块实现单例" class="headerlink" title="静态代码块实现单例"></a>静态代码块实现单例</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticSingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> StaticSingleton instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        instance = <span class="keyword">new</span> StaticSingleton();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticSington</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;单例创建&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticSingleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上这也是饿汉式的，立即加载的</p>
+<h3 id="枚举实现的单例"><a href="#枚举实现的单例" class="headerlink" title="枚举实现的单例"></a>枚举实现的单例</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">enum</span> <span class="title">SingleDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    INSTANCE;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Student instance;</span><br><span class="line"></span><br><span class="line">    SingleDemo() &#123;</span><br><span class="line">        instance = <span class="keyword">new</span> Student();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Student <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>枚举类构造方法默认private,每个枚举实例默认public static final，也就表明只能被实例化一次。在调用构造方法时，我们的单例被实例化。<br>也就是说，因为enum中的实例被保证只会被实例化一次，所以我们的INSTANCE也被保证实例化一次。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%87%A0%E7%A7%8D%E5%BD%A2%E5%BC%8F/" data-id="ckjr4vdzq003vf0uk4oz8136y" data-title="单例模式几种方式" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" rel="tag">单例模式</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-redis使用protobuf自定义序列化方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/redis%E4%BD%BF%E7%94%A8protobuf%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E5%BC%8F/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T09:06:26.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/redis%E4%BD%BF%E7%94%A8protobuf%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E5%BC%8F/">redis使用protobuf自定义序列化方式</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>springboot redis 使用protobuf自定义序列化方式<br>实现RedisSerializer接口，重写序列化和反序列化方法即可</p>
+        
+          <p class="article-more-link">
+            <a href="/2018/05/20/redis%E4%BD%BF%E7%94%A8protobuf%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E5%BC%8F/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/redis%E4%BD%BF%E7%94%A8protobuf%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E5%BC%8F/" data-id="ckjr4vdz4001tf0uk4hw1gjop" data-title="redis使用protobuf自定义序列化方式" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/protobuf/" rel="tag">protobuf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis/" rel="tag">redis</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/springboot/" rel="tag">springboot</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-zookeeper集群搭建" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/zookeeper%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T08:24:30.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/zookeeper/">zookeeper</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/zookeeper%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">zookeeper集群搭建</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ip分配"><a href="#ip分配" class="headerlink" title="ip分配"></a>ip分配</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">master <span class="number">192.168</span><span class="number">.56</span><span class="number">.101</span></span><br><span class="line">slave1 <span class="number">192.168</span><span class="number">.56</span><span class="number">.102</span></span><br><span class="line">slave2 <span class="number">192.168</span><span class="number">.56</span><span class="number">.103</span></span><br><span class="line">slave3 <span class="number">192.168</span><span class="number">.56</span><span class="number">.104</span></span><br><span class="line">slave4 <span class="number">192.168</span><span class="number">.56</span><span class="number">.105</span></span><br></pre></td></tr></table></figure>
+<h1 id="每个节点配置zk环境变量"><a href="#每个节点配置zk环境变量" class="headerlink" title="每个节点配置zk环境变量"></a>每个节点配置zk环境变量</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/profile</span><br><span class="line">export ZK_HOME=/usr/local/zookeeper</span><br><span class="line">export PATH=$PATH:$ZK_HOME/bin</span><br><span class="line">source /etc/profile</span><br></pre></td></tr></table></figure>
+<h1 id="修改每个节点配置"><a href="#修改每个节点配置" class="headerlink" title="修改每个节点配置"></a>修改每个节点配置</h1><p>打开每个节点zookeeper目录下的conf目录，将zoo_simple.cfg,拷贝为zoo.cfg,并进行修改</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"># The number of milliseconds of each tick</span><br><span class="line"># 心跳间隔，单位毫秒，每隔2000毫秒发一个心跳包</span><br><span class="line">tickTime=<span class="number">2000</span></span><br><span class="line"># The number of ticks that the initial</span><br><span class="line"># synchronization phase can take</span><br><span class="line"># 初始化连接时,集群中的follower连接到leader最多忍受的心跳数,超过这个数量,就连接失败,总时间是tickTime*syncLimit(ms)</span><br><span class="line">initLimit=<span class="number">10</span></span><br><span class="line"># The number of ticks that can pass between</span><br><span class="line"># sending a request and getting an acknowledgement</span><br><span class="line"># leader与follower之间发送消息最多忍受的心跳数,超过这个数字就连接失败,总时间是tickTime*syncLimit(ms)</span><br><span class="line">syncLimit=<span class="number">5</span></span><br><span class="line"># the port at which the clients will connect</span><br><span class="line"># 客户端连接zk服务端的端口</span><br><span class="line">clientPort=<span class="number">2181</span></span><br><span class="line"># zk保存日志的目录</span><br><span class="line">dataLogDir=/usr/local/zookeeper/logs</span><br><span class="line"># zk保存数据的目录</span><br><span class="line">dataDir=/usr/local/zookeeper/data</span><br><span class="line"># server.a=b:c:d</span><br><span class="line"># a 第几号服务器,对应myid文件的内容，范围是1~255</span><br><span class="line"># b ip或域名</span><br><span class="line"># c 集群成员与leader的发送/接受信息的端口</span><br><span class="line"># d leader挂掉以后，follower之间选举新leader的端口</span><br><span class="line">server<span class="number">.1</span>=master:<span class="number">2888</span>:<span class="number">3888</span></span><br><span class="line">server<span class="number">.2</span>=slave1:<span class="number">2888</span>:<span class="number">3888</span></span><br><span class="line">server<span class="number">.3</span>=slave2:<span class="number">2888</span>:<span class="number">3888</span></span><br><span class="line">server<span class="number">.4</span>=slave3:<span class="number">2888</span>:<span class="number">3888</span></span><br><span class="line">server<span class="number">.5</span>=slave4:<span class="number">2888</span>:<span class="number">3888</span></span><br></pre></td></tr></table></figure>
+<p><strong>上边这些目录在zk启动前建好，为保证集群中配置一致，配置文件应用svn或者git管理起来</strong></p>
+<p>在每个节点zoo.cfg中定义的dataDir目录写入myid文件及内容</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/zookeeper/data</span><br><span class="line">touch myid</span><br><span class="line">echo server.a=b:c:d中的a值 &gt; myid</span><br></pre></td></tr></table></figure>
+<h1 id="启动集群"><a href="#启动集群" class="headerlink" title="启动集群"></a>启动集群</h1><p>由于已经将zk的bin目录加入到环境变量，所以每个节点可直接运行命令</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@slave1 conf]# zkServer.sh start</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br></pre></td></tr></table></figure>
+<h1 id="查看效果"><a href="#查看效果" class="headerlink" title="查看效果"></a>查看效果</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">[root@master conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line"></span><br><span class="line">[root@slave1 conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line"></span><br><span class="line">[root@slave2 conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line"></span><br><span class="line">[root@slave3 conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line"></span><br><span class="line">[root@slave4 conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: leader</span><br></pre></td></tr></table></figure>
+<h1 id="测试选举"><a href="#测试选举" class="headerlink" title="测试选举"></a>测试选举</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@slave4 conf]# zkServer.sh stop</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br><span class="line"></span><br><span class="line">[root@slave2 conf]# zkServer.sh status</span><br><span class="line">JMX enabled by <span class="keyword">default</span></span><br><span class="line">Using config: /usr/local/zookeeper/bin/../conf/zoo.cfg</span><br><span class="line">Mode: leader</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/zookeeper%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" data-id="ckjr4vdzo003nf0ukhy4f1sem" data-title="zookeeper集群搭建" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-mysql多列模糊匹配" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/mysql%E5%A4%9A%E5%88%97%E6%A8%A1%E7%B3%8A%E5%8C%B9%E9%85%8D/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T08:15:13.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/mysql/">mysql</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/mysql%E5%A4%9A%E5%88%97%E6%A8%A1%E7%B3%8A%E5%8C%B9%E9%85%8D/">mysql多列模糊匹配</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>可以利用concat实现多列模糊匹配</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">select * <span class="function">from table_a where <span class="title">CONCAT</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">字段_1,<span class="string">&#x27;|&#x27;</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">字段_2,<span class="string">&#x27;|&#x27;</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">字段_3,<span class="string">&#x27;|&#x27;</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">字段_4,<span class="string">&#x27;|&#x27;</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">字段_5,<span class="string">&#x27;|&#x27;</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">字段_6,<span class="string">&#x27;|&#x27;</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span> LIKE <span class="title">CONCAT</span><span class="params">(<span class="string">&#x27;%&#x27;</span>,#&#123;search_key&#125;,<span class="string">&#x27;%&#x27;</span>)</span></span></span><br></pre></td></tr></table></figure>
+<p>实际上就是把多个列的值拼起来作为一个列再like</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/mysql%E5%A4%9A%E5%88%97%E6%A8%A1%E7%B3%8A%E5%8C%B9%E9%85%8D/" data-id="ckjr4vdz3001pf0uk8ygb45lf" data-title="mysql多列模糊匹配" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2/" rel="tag">搜索</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-js数字格式化为英文" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E8%8B%B1%E6%96%87/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T08:05:22.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/js/">js</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E8%8B%B1%E6%96%87/">js数字格式化为英文</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>效果：123456—&gt;One  Hundred  Twenty-Three  Thousand,  Four  Hundred  Fifty-Six</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> n = <span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">validate</span>(<span class="params">input</span>) </span>&#123;</span><br><span class="line">	convert(input);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">d1</span>(<span class="params">x</span>) </span>&#123; <span class="comment">// single digit terms</span></span><br><span class="line">	<span class="keyword">switch</span> (x) &#123;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;0&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot;&quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;1&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; ONE &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;2&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; TWO &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;3&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; THREE &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;4&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FOUR &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;5&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FIVE &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;6&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SIX &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;7&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SEVEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;8&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; EIGHT &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;9&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; NINE &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">default</span>:</span><br><span class="line">			n = <span class="string">&quot;Not a Number&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> n;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">d2</span>(<span class="params">x</span>) </span>&#123; <span class="comment">// 10x digit terms</span></span><br><span class="line">	<span class="keyword">switch</span> (x) &#123;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;0&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot;&quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;1&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot;&quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;2&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; TWENTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;3&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; THIRTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;4&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FORTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;5&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FIFTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;6&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SIXTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;7&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SEVENTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;8&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; EIGHTY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;9&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; NINETY &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">default</span>:</span><br><span class="line">			n = <span class="string">&quot;Not a Number&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> n;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">d3</span>(<span class="params">x</span>) </span>&#123; <span class="comment">// teen digit terms</span></span><br><span class="line">	<span class="keyword">switch</span> (x) &#123;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;0&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; TEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;1&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; ELEVEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;2&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; TWELVE &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;3&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; THIRTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;4&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FOURTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;5&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; FIFTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;6&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SIXTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;7&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; SEVENTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;8&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; EIGHTEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">&#x27;9&#x27;</span>:</span><br><span class="line">			n = <span class="string">&quot; NINETEEN &quot;</span>;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">default</span>:</span><br><span class="line">			n = <span class="string">&quot;Not a Number&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> n;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">convert</span>(<span class="params">input</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> inputlength = input.length;</span><br><span class="line">    <span class="keyword">var</span> x = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">var</span> teen1 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> teen2 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> teen3 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> numName = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> invalidNum = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> a1 = <span class="string">&quot;&quot;</span>; <span class="comment">// for insertion of million, thousand, hundred</span></span><br><span class="line">    <span class="keyword">var</span> a2 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> a3 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> a4 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> a5 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">var</span> digit = <span class="keyword">new</span> <span class="built_in">Array</span>(inputlength); <span class="comment">// stores output</span></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; inputlength; i++) &#123;</span><br><span class="line">        <span class="comment">// puts digits into array</span></span><br><span class="line">        digit[inputlength - i] = input.charAt(i)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> store = <span class="keyword">new</span> <span class="built_in">Array</span>(<span class="number">9</span>); <span class="comment">// store output</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; inputlength; i++) &#123;</span><br><span class="line">        x = inputlength - i;</span><br><span class="line">        <span class="keyword">switch</span> (x) &#123; <span class="comment">// assign text to each digit</span></span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">9</span>:</span><br><span class="line">                d1(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">8</span>:</span><br><span class="line">                <span class="keyword">if</span> (digit[x] == <span class="string">&quot;1&quot;</span>) &#123;</span><br><span class="line">                    teen3 = <span class="string">&quot;yes&quot;</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    teen3 = <span class="string">&quot;&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">                d2(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">7</span>:</span><br><span class="line">                <span class="keyword">if</span> (teen3 == <span class="string">&quot;yes&quot;</span>) &#123;</span><br><span class="line">                    teen3 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">                    d3(digit[x])</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    d1(digit[x])</span><br><span class="line">                &#125;</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">6</span>:</span><br><span class="line">                d1(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">5</span>:</span><br><span class="line">                <span class="keyword">if</span> (digit[x] == <span class="string">&quot;1&quot;</span>) &#123;</span><br><span class="line">                    teen2 = <span class="string">&quot;yes&quot;</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    teen2 = <span class="string">&quot;&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">                d2(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">4</span>:</span><br><span class="line">                <span class="keyword">if</span> (teen2 == <span class="string">&quot;yes&quot;</span>) &#123;</span><br><span class="line">                    teen2 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">                    d3(digit[x])</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    d1(digit[x])</span><br><span class="line">                &#125;</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">3</span>:</span><br><span class="line">                d1(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">if</span> (digit[x] == <span class="string">&quot;1&quot;</span>) &#123;</span><br><span class="line">                    teen1 = <span class="string">&quot;yes&quot;</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    teen1 = <span class="string">&quot;&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">                d2(digit[x]);</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> x = <span class="number">1</span>:</span><br><span class="line">                <span class="keyword">if</span> (teen1 == <span class="string">&quot;yes&quot;</span>) &#123;</span><br><span class="line">                    teen1 = <span class="string">&quot;&quot;</span>;</span><br><span class="line">                    d3(digit[x])</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    d1(digit[x])</span><br><span class="line">                &#125;</span><br><span class="line">                store[x] = n;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (store[x] == <span class="string">&quot;Not a Number&quot;</span>) &#123;</span><br><span class="line">            invalidNum = <span class="string">&quot;yes&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">        ;</span><br><span class="line">        <span class="keyword">switch</span> (inputlength) &#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">                store[<span class="number">2</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">                store[<span class="number">3</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">                store[<span class="number">4</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">4</span>:</span><br><span class="line">                store[<span class="number">5</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">5</span>:</span><br><span class="line">                store[<span class="number">6</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">6</span>:</span><br><span class="line">                store[<span class="number">7</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">7</span>:</span><br><span class="line">                store[<span class="number">8</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">8</span>:</span><br><span class="line">                store[<span class="number">9</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (store[<span class="number">9</span>] != <span class="string">&quot;&quot;</span>) &#123;</span><br><span class="line">            a1 = <span class="string">&quot; HUNDRED &quot;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a1 = <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((store[<span class="number">9</span>] != <span class="string">&quot;&quot;</span>) || (store[<span class="number">8</span>] != <span class="string">&quot;&quot;</span>) || (store[<span class="number">7</span>] != <span class="string">&quot;&quot;</span>)) &#123;</span><br><span class="line">            a2 = <span class="string">&quot; MILLION &quot;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a2 = <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (store[<span class="number">6</span>] != <span class="string">&quot;&quot;</span>) &#123;</span><br><span class="line">            a3 = <span class="string">&quot; HUNDRED &quot;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a3 = <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((store[<span class="number">6</span>] != <span class="string">&quot;&quot;</span>) || (store[<span class="number">5</span>] != <span class="string">&quot;&quot;</span>) || (store[<span class="number">4</span>] != <span class="string">&quot;&quot;</span>)) &#123;</span><br><span class="line">            a4 = <span class="string">&quot; THOUSAND &quot;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a4 = <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (store[<span class="number">3</span>] != <span class="string">&quot;&quot;</span>) &#123;</span><br><span class="line">            a5 = <span class="string">&quot; HUNDRED &quot;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a5 = <span class="string">&quot;&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// add up text, cancel if invalid input found</span></span><br><span class="line">    <span class="keyword">if</span> (invalidNum == <span class="string">&quot;yes&quot;</span>) &#123;</span><br><span class="line">        numName = <span class="string">&quot;对不起，你输入的不是数字!&quot;</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        numName = store[<span class="number">9</span>] + a1 + store[<span class="number">8</span>] + <span class="string">&#x27;-&#x27;</span> + store[<span class="number">7</span>]</span><br><span class="line">            + a2 + store[<span class="number">6</span>] + a3 + store[<span class="number">5</span>] + <span class="string">&#x27;-&#x27;</span> + store[<span class="number">4</span>]</span><br><span class="line">            + a4 + store[<span class="number">3</span>] + a5 + store[<span class="number">2</span>] + <span class="string">&#x27;-&#x27;</span> + store[<span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    store[<span class="number">1</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">2</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">3</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">4</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">5</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">6</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">7</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">8</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    store[<span class="number">9</span>] = <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">if</span> (numName == <span class="string">&quot;&quot;</span>) &#123;</span><br><span class="line">        numName = <span class="string">&quot;Zero&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">console</span>.log(numName);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E8%8B%B1%E6%96%87/" data-id="ckjr4vdyu000tf0ukb2tw5van" data-title="js数字格式化为英文" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">数字格式化</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-js数字格式化为金钱" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E9%87%91%E9%92%B1/" class="article-date">
+  <time class="dt-published" datetime="2018-05-20T07:59:14.000Z" itemprop="datePublished">2018-05-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/js/">js</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E9%87%91%E9%92%B1/">js数字格式化为金钱</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>效果：1111111—&gt;$1,111,111</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">formatMoney</span>(<span class="params">obj</span>)</span>&#123;</span><br><span class="line"></span><br><span class="line">	$(obj).val($(obj).val().replace(<span class="string">&#x27;,&#x27;</span>,<span class="string">&#x27;&#x27;</span>));</span><br><span class="line">	<span class="keyword">var</span> str = $(obj).val();</span><br><span class="line">	<span class="keyword">if</span> ($(obj).val().indexOf(<span class="string">&#x27;.&#x27;</span>) &lt; <span class="number">0</span>)&#123;</span><br><span class="line">		$(obj).val(str+<span class="string">&#x27;.00&#x27;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> str1 = $(obj).val().split(<span class="string">&#x27;.&#x27;</span>)[<span class="number">0</span>];</span><br><span class="line">	<span class="keyword">var</span> str3 = $(obj).val().split(<span class="string">&#x27;.&#x27;</span>)[<span class="number">1</span>];</span><br><span class="line">	<span class="keyword">if</span> (str3.length&lt;<span class="number">2</span>)&#123;</span><br><span class="line">		str3 = str3+<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (str3.length &gt; <span class="number">2</span>)&#123;</span><br><span class="line">		layer.msg(<span class="string">&#x27;Please enter two decimal places!&#x27;</span>,&#123;<span class="attr">icon</span>:<span class="number">2</span>,<span class="attr">time</span>:<span class="number">2000</span>&#125;);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> len = str1.length, str2 = <span class="string">&#x27;&#x27;</span>, max = <span class="built_in">Math</span>.floor(len / <span class="number">3</span>);</span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span> ; i &lt; max ; i++)&#123;</span><br><span class="line">		<span class="keyword">var</span> s = str1.slice(len - <span class="number">3</span>, len);</span><br><span class="line">		str1 = str1.substr(<span class="number">0</span>, len - <span class="number">3</span>);</span><br><span class="line">		str2 = (<span class="string">&#x27;,&#x27;</span> + s) + str2;</span><br><span class="line">		len = str1.length;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (len % <span class="number">3</span> == <span class="number">0</span>)&#123;</span><br><span class="line">		str2 = str2.substr(<span class="number">1</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	str1 += str2;</span><br><span class="line">	str1 += <span class="string">&#x27;.&#x27;</span>;</span><br><span class="line">	str1 += str3;</span><br><span class="line">	str1 = <span class="string">&#x27;$&#x27;</span>+str1;</span><br><span class="line">	$(obj).val(str1);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>replaceAll</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">temp = temp.replace(<span class="regexp">/,/g</span>,<span class="string">&#x27;&#x27;</span>);<span class="comment">//去除所有,</span></span><br><span class="line">temp = temp.replace(<span class="regexp">/\$/g</span>,<span class="string">&#x27;&#x27;</span>);<span class="comment">//去除所有$</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2018/05/20/js%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%B8%BA%E9%87%91%E9%92%B1/" data-id="ckjr4vdyv000wf0uk33b5cme2" data-title="js数字格式化为金钱" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">数字格式化</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <a class="extend prev" rel="prev" href="/page/4/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">Next &raquo;</a>
+  </nav>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/activemq/">activemq</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/hadoop/">hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/js/">js</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/jvm/">jvm</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/linux/">linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/maven/">maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/mysql/">mysql</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/spring/">spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/zookeeper/">zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">多线程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%97%A5%E5%BF%97/">日志</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E8%BD%AE%E5%AD%90/">轮子</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%80%9A%E8%AF%86/">通识</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CountDownLatch/" rel="tag">CountDownLatch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CyclicBarrier/" rel="tag">CyclicBarrier</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantLock/" rel="tag">ReentrantLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ReentrantReadWriteLock/" rel="tag">ReentrantReadWriteLock</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ThreadLocal/" rel="tag">ThreadLocal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/activemq/" rel="tag">activemq</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cas%E6%93%8D%E4%BD%9C/" rel="tag">cas操作</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cron/" rel="tag">cron</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fork-join%E6%A1%86%E6%9E%B6/" rel="tag">fork/join框架</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/freemark/" rel="tag">freemark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hadoop/" rel="tag">hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm/" rel="tag">jvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" rel="tag">jvm，垃圾回收</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/" rel="tag">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/log4j/" rel="tag">log4j</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/" rel="tag">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/protobuf/" rel="tag">protobuf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/quartz/" rel="tag">quartz</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/" rel="tag">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/servlet3/" rel="tag">servlet3</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring/" rel="tag">spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/springboot/" rel="tag">springboot</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/" rel="tag">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web-xml/" rel="tag">web.xml</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" rel="tag">主从复制</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" rel="tag">单例模式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">基础线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag">多线程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" rel="tag">字符串</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="tag">布隆过滤器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" rel="tag">并发集合类</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2/" rel="tag">搜索</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">数字格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A0%E9%94%81/" rel="tag">无锁</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" rel="tag">日期格式化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%A0%88/" rel="tag">栈</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B3%9B%E5%9E%8B/" rel="tag">泛型</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag">线程池</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" rel="tag">线程阻塞工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BD%AE%E5%AD%90/" rel="tag">轮子</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%9A%E8%AF%86/" rel="tag">通识</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" rel="tag">锁优化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%98%9F%E5%88%97/" rel="tag">队列</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CountDownLatch/" style="font-size: 10px;">CountDownLatch</a> <a href="/tags/CyclicBarrier/" style="font-size: 10px;">CyclicBarrier</a> <a href="/tags/ReentrantLock/" style="font-size: 10px;">ReentrantLock</a> <a href="/tags/ReentrantReadWriteLock/" style="font-size: 10px;">ReentrantReadWriteLock</a> <a href="/tags/ThreadLocal/" style="font-size: 10px;">ThreadLocal</a> <a href="/tags/activemq/" style="font-size: 10px;">activemq</a> <a href="/tags/cas%E6%93%8D%E4%BD%9C/" style="font-size: 10px;">cas操作</a> <a href="/tags/cron/" style="font-size: 10px;">cron</a> <a href="/tags/fork-join%E6%A1%86%E6%9E%B6/" style="font-size: 10px;">fork/join框架</a> <a href="/tags/freemark/" style="font-size: 10px;">freemark</a> <a href="/tags/hadoop/" style="font-size: 12px;">hadoop</a> <a href="/tags/js/" style="font-size: 14px;">js</a> <a href="/tags/jvm/" style="font-size: 10px;">jvm</a> <a href="/tags/jvm%EF%BC%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" style="font-size: 12px;">jvm，垃圾回收</a> <a href="/tags/linux/" style="font-size: 16px;">linux</a> <a href="/tags/log4j/" style="font-size: 10px;">log4j</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/protobuf/" style="font-size: 10px;">protobuf</a> <a href="/tags/quartz/" style="font-size: 12px;">quartz</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/servlet3/" style="font-size: 10px;">servlet3</a> <a href="/tags/spring/" style="font-size: 12px;">spring</a> <a href="/tags/springboot/" style="font-size: 10px;">springboot</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/web-xml/" style="font-size: 10px;">web.xml</a> <a href="/tags/zookeeper/" style="font-size: 20px;">zookeeper</a> <a href="/tags/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/" style="font-size: 10px;">主从复制</a> <a href="/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" style="font-size: 10px;">单例模式</a> <a href="/tags/%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">基础线程池</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 18px;">多线程</a> <a href="/tags/%E5%AD%97%E7%AC%A6%E4%B8%B2/" style="font-size: 10px;">字符串</a> <a href="/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" style="font-size: 10px;">布隆过滤器</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E9%9B%86%E5%90%88%E7%B1%BB/" style="font-size: 10px;">并发集合类</a> <a href="/tags/%E6%90%9C%E7%B4%A2/" style="font-size: 10px;">搜索</a> <a href="/tags/%E6%95%B0%E5%AD%97%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 12px;">数字格式化</a> <a href="/tags/%E6%97%A0%E9%94%81/" style="font-size: 10px;">无锁</a> <a href="/tags/%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F%E5%8C%96/" style="font-size: 10px;">日期格式化</a> <a href="/tags/%E6%A0%88/" style="font-size: 10px;">栈</a> <a href="/tags/%E6%B3%9B%E5%9E%8B/" style="font-size: 10px;">泛型</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" style="font-size: 10px;">线程池</a> <a href="/tags/%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">线程阻塞工具</a> <a href="/tags/%E8%BD%AE%E5%AD%90/" style="font-size: 10px;">轮子</a> <a href="/tags/%E9%80%9A%E8%AF%86/" style="font-size: 10px;">通识</a> <a href="/tags/%E9%94%81%E4%BC%98%E5%8C%96/" style="font-size: 12px;">锁优化</a> <a href="/tags/%E9%98%9F%E5%88%97/" style="font-size: 10px;">队列</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/10/">October 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/09/">September 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/01/10/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/24/federation%E6%A8%A1%E5%BC%8F%E7%9A%84hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">federation模式的hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/12/16/hadoop%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">hadoop集群搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/26/linux-%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86/">linux-文件管理</a>
+          </li>
+        
+          <li>
+            <a href="/2018/10/25/%E6%98%9F%E6%9C%9F%E6%9C%88%E4%BB%BD%E8%8B%B1%E6%96%87%E7%BC%A9%E5%86%99/">星期月份英文缩写</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
